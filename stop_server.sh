@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# AI ピクセルアート ジェネレーター サーバー停止スクリプト
+# Pixa - AI ピクセルアート ジェネレーター サーバー停止スクリプト
 
-echo "🛑 AI ピクセルアート ジェネレーター を停止中..."
+echo "🛑 Pixa - AI ピクセルアート ジェネレーター を停止中..."
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"

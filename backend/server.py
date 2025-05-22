@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-AIピクセルアート生成アプリケーション - Flaskバックエンドサーバー
+Pixa - AIピクセルアート生成アプリケーション
+M2 Pro最適化 Flaskバックエンドサーバー
 既存のStable Diffusion環境を活用したピクセルアート生成API
 """
 
@@ -399,7 +400,7 @@ def get_presets():
     return jsonify(presets)
 
 if __name__ == '__main__':
-    logger.info("Starting AI Pixel Art Generator Backend")
+    logger.info("Starting Pixa - AI Pixel Art Generator Backend")
     
     # パイプライン初期化
     if initialize_pipeline():

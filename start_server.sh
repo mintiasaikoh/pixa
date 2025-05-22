@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# AI ピクセルアート ジェネレーター サーバー起動スクリプト
+# Pixa - AI ピクセルアート ジェネレーター サーバー起動スクリプト
 # M2 Pro Mac最適化版
 
-echo "🎨 AI ピクセルアート ジェネレーター を起動中..."
+echo "🎨 Pixa - AI ピクセルアート ジェネレーター を起動中..."
 
 # 現在のディレクトリを保存
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -38,7 +38,7 @@ else:
 "
 
 # 統合サーバーを起動
-echo "🚀 AIピクセルアート統合サーバーを起動中..."
+echo "🚀 Pixa統合サーバーを起動中..."
 echo "サーバーURL: http://localhost:5001"
 echo ""
 echo "サーバーを停止するには Ctrl+C を押してください"
