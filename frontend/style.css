@@ -1,0 +1,240 @@
+/* AI ピクセルアート ジェネレーター スタイル */
+
+:root {
+    --pixel-primary: #00ff41;
+    --pixel-secondary: #ff0080;
+    --pixel-accent: #ffff00;
+    --dark-bg: #1a1a1a;
+    --darker-bg: #0d0d0d;
+}
+
+body {
+    font-family: 'Courier New', monospace;
+    background-color: var(--dark-bg) !important;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+}
+
+.bg-secondary {
+    background-color: #2d2d2d !important;
+}
+
+.bg-black {
+    background-color: var(--darker-bg) !important;
+}
+
+/* カスタムフォーム要素 */
+.form-control,
+.form-select {
+    background-color: #333;
+    border-color: #555;
+    color: #fff;
+    font-family: 'Courier New', monospace;
+}
+
+.form-control:focus,
+.form-select:focus {
+    background-color: #333;
+    border-color: var(--pixel-primary);
+    color: #fff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 255, 65, 0.25);
+}
+
+.form-control::placeholder {
+    color: #999;
+}
+
+/* カスタムレンジスライダー */
+.form-range {
+    height: 0.5rem;
+}
+
+.form-range::-webkit-slider-track {
+    background-color: #555;
+    border-radius: 0.25rem;
+    height: 0.5rem;
+}
+
+.form-range::-webkit-slider-thumb {
+    background-color: var(--pixel-primary);
+    border: none;
+    border-radius: 50%;
+    height: 1rem;
+    width: 1rem;
+}
+
+.form-range::-moz-range-track {
+    background-color: #555;
+    border-radius: 0.25rem;
+    height: 0.5rem;
+    border: none;
+}
+
+.form-range::-moz-range-thumb {
+    background-color: var(--pixel-primary);
+    border: none;
+    border-radius: 50%;
+    height: 1rem;
+    width: 1rem;
+}
+
+/* ボタンスタイル */
+.btn-primary {
+    background-color: var(--pixel-primary);
+    border-color: var(--pixel-primary);
+    color: #000;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-primary:hover {
+    background-color: #00cc33;
+    border-color: #00cc33;
+    color: #000;
+}
+
+.btn-primary:disabled {
+    background-color: #666;
+    border-color: #666;
+    color: #999;
+}
+
+.btn-outline-light {
+    border-color: #666;
+    color: #ccc;
+    font-size: 0.8rem;
+}
+
+.btn-outline-light:hover {
+    background-color: var(--pixel-secondary);
+    border-color: var(--pixel-secondary);
+    color: #fff;
+}
+
+/* プログレスバー */
+.progress {
+    background-color: #333;
+    height: 0.75rem;
+}
+
+.progress-bar {
+    background: linear-gradient(45deg, var(--pixel-primary), var(--pixel-accent));
+}
+
+/* アコーディオン */
+.accordion-button {
+    font-family: 'Courier New', monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: bold;
+}
+
+.accordion-button:not(.collapsed) {
+    color: var(--pixel-primary);
+    background-color: #333;
+}
+
+.accordion-button:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 255, 65, 0.25);
+}
+
+/* 結果表示エリア */
+#result-container {
+    min-height: 400px;
+    border: 2px dashed #555;
+    transition: border-color 0.3s ease;
+}
+
+#result-container:hover {
+    border-color: var(--pixel-primary);
+}
+
+#result-image {
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+    /* ピクセルアート表示最適化 */
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-crisp-edges;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+/* プレースホルダー */
+#placeholder i {
+    color: #666;
+    opacity: 0.7;
+}
+
+/* クイックプロンプトボタン */
+.quick-prompt {
+    transition: all 0.2s ease;
+}
+
+.quick-prompt:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(255, 0, 128, 0.3);
+}
+
+/* 生成情報 */
+#generation-info {
+    font-family: 'Courier New', monospace;
+    font-size: 0.75rem;
+    max-width: 300px;
+}
+
+/* ローディングアニメーション */
+.loading-spinner {
+    border: 3px solid #333;
+    border-top: 3px solid var(--pixel-primary);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    body {
+        overflow-y: auto;
+        height: auto;
+    }
+    
+    .container-fluid .row {
+        height: auto;
+    }
+    
+    #result-container {
+        min-height: 300px;
+    }
+}
+
+/* ピクセルアート風フォント効果 */
+h1, h2, h3 {
+    text-shadow: 1px 1px 0px #333;
+}
+
+/* スクロールバーカスタマイズ */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #333;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #666;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--pixel-primary);
+}

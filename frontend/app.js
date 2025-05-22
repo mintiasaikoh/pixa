@@ -1,0 +1,325 @@
+/**
+ * AI ピクセルアート ジェネレーター - フロントエンド JavaScript
+ */
+
+class PixelArtGenerator {
+    constructor() {
+        this.apiUrl = '';
+        this.isGenerating = false;
+        this.currentImage = null;
+        
+        this.initializeElements();
+        this.bindEvents();
+        this.loadPresets();
+        this.checkServerStatus();
+    }
+    
+    initializeElements() {
+        // DOM要素を取得
+        this.elements = {
+            prompt: document.getElementById('prompt'),
+            negativePrompt: document.getElementById('negative-prompt'),
+            preset: document.getElementById('preset'),
+            width: document.getElementById('width'),
+            height: document.getElementById('height'),
+            pixelSize: document.getElementById('pixel-size'),
+            pixelSizeValue: document.getElementById('pixel-size-value'),
+            paletteSize: document.getElementById('palette-size'),
+            paletteSizeValue: document.getElementById('palette-size-value'),
+            steps: document.getElementById('steps'),
+            stepsValue: document.getElementById('steps-value'),
+            guidance: document.getElementById('guidance'),
+            guidanceValue: document.getElementById('guidance-value'),
+            seed: document.getElementById('seed'),
+            generateBtn: document.getElementById('generate-btn'),
+            progressContainer: document.getElementById('progress-container'),
+            progressBar: document.getElementById('progress-bar'),
+            progressText: document.getElementById('progress-text'),
+            placeholder: document.getElementById('placeholder'),
+            resultImage: document.getElementById('result-image'),
+            imageControls: document.getElementById('image-controls'),
+            downloadBtn: document.getElementById('download-btn'),
+            copyBtn: document.getElementById('copy-btn'),
+            generationInfo: document.getElementById('generation-info'),
+            quickPrompts: document.querySelectorAll('.quick-prompt')
+        };
+    }
+    
+    bindEvents() {
+        // 生成ボタン
+        this.elements.generateBtn.addEventListener('click', () => this.generateImage());
+        
+        // Enterキーで生成
+        this.elements.prompt.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                this.generateImage();
+            }
+        });
+        
+        // レンジスライダーの値表示更新
+        this.elements.pixelSize.addEventListener('input', (e) => {
+            this.elements.pixelSizeValue.textContent = e.target.value;
+        });
+        
+        this.elements.paletteSize.addEventListener('input', (e) => {
+            this.elements.paletteSizeValue.textContent = e.target.value;
+        });
+        
+        this.elements.steps.addEventListener('input', (e) => {
+            this.elements.stepsValue.textContent = e.target.value;
+        });
+        
+        this.elements.guidance.addEventListener('input', (e) => {
+            this.elements.guidanceValue.textContent = e.target.value;
+        });
+        
+        // プリセット変更
+        this.elements.preset.addEventListener('change', (e) => {
+            this.applyPreset(e.target.value);
+        });
+        
+        // ダウンロードボタン
+        this.elements.downloadBtn.addEventListener('click', () => this.downloadImage());
+        
+        // コピーボタン
+        this.elements.copyBtn.addEventListener('click', () => this.copyToClipboard());
+        
+        // クイックプロンプト
+        this.elements.quickPrompts.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const prompt = e.target.dataset.prompt;
+                this.elements.prompt.value = prompt;
+                this.elements.prompt.focus();
+            });
+        });
+    }
+    
+    async checkServerStatus() {
+        try {
+            const response = await fetch(`${this.apiUrl}/health`);
+            const data = await response.json();
+            
+            if (data.status === 'healthy' && data.pipeline_loaded) {
+                this.showStatus('サーバー接続成功', 'success');
+            } else {
+                this.showStatus('サーバーは動作していますが、AIモデルの読み込み中です', 'warning');
+            }
+        } catch (error) {
+            this.showStatus('サーバーに接続できません。バックエンドが起動していることを確認してください。', 'error');
+            this.elements.generateBtn.disabled = true;
+        }
+    }
+    
+    async loadPresets() {
+        try {
+            const response = await fetch(`${this.apiUrl}/presets`);
+            const presets = await response.json();
+            
+            // プリセットオプションを追加
+            for (const [key, preset] of Object.entries(presets)) {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = preset.name;
+                this.elements.preset.appendChild(option);
+            }
+            
+            this.presets = presets;
+        } catch (error) {
+            console.error('プリセットの読み込みに失敗:', error);
+        }
+    }
+    
+    applyPreset(presetKey) {
+        if (!presetKey || !this.presets || !this.presets[presetKey]) return;
+        
+        const preset = this.presets[presetKey];
+        
+        // UIにプリセット値を適用
+        this.elements.pixelSize.value = preset.pixel_size;
+        this.elements.pixelSizeValue.textContent = preset.pixel_size;
+        
+        this.elements.paletteSize.value = preset.palette_size;
+        this.elements.paletteSizeValue.textContent = preset.palette_size;
+        
+        this.elements.steps.value = preset.steps;
+        this.elements.stepsValue.textContent = preset.steps;
+        
+        this.elements.guidance.value = preset.guidance_scale;
+        this.elements.guidanceValue.textContent = preset.guidance_scale;
+    }
+    
+    async generateImage() {
+        if (this.isGenerating) return;
+        
+        const prompt = this.elements.prompt.value.trim();
+        if (!prompt) {
+            this.showStatus('プロンプトを入力してください', 'error');
+            return;
+        }
+        
+        this.startGeneration();
+        
+        try {
+            const params = this.getGenerationParams();
+            
+            const response = await fetch(`${this.apiUrl}/generate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(params)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.displayResult(data.image, data.parameters);
+                this.showStatus('生成完了！', 'success');
+            } else {
+                throw new Error(data.error || '生成に失敗しました');
+            }
+            
+        } catch (error) {
+            console.error('生成エラー:', error);
+            this.showStatus(`エラー: ${error.message}`, 'error');
+        } finally {
+            this.endGeneration();
+        }
+    }
+    
+    getGenerationParams() {
+        return {
+            prompt: this.elements.prompt.value.trim(),
+            negative_prompt: this.elements.negativePrompt.value.trim(),
+            width: parseInt(this.elements.width.value),
+            height: parseInt(this.elements.height.value),
+            pixel_size: parseInt(this.elements.pixelSize.value),
+            palette_size: parseInt(this.elements.paletteSize.value),
+            steps: parseInt(this.elements.steps.value),
+            guidance_scale: parseFloat(this.elements.guidance.value),
+            seed: this.elements.seed.value ? parseInt(this.elements.seed.value) : null
+        };
+    }
+    
+    startGeneration() {
+        this.isGenerating = true;
+        this.elements.generateBtn.disabled = true;
+        this.elements.generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>生成中...';
+        
+        this.elements.progressContainer.style.display = 'block';
+        this.elements.progressBar.style.width = '0%';
+        
+        // プログレスアニメーション
+        this.progressInterval = setInterval(() => {
+            const currentWidth = parseFloat(this.elements.progressBar.style.width) || 0;
+            if (currentWidth < 90) {
+                this.elements.progressBar.style.width = (currentWidth + Math.random() * 10) + '%';
+            }
+        }, 500);
+    }
+    
+    endGeneration() {
+        this.isGenerating = false;
+        this.elements.generateBtn.disabled = false;
+        this.elements.generateBtn.innerHTML = '<i class="fas fa-magic me-2"></i>ピクセルアートを生成';
+        
+        this.elements.progressContainer.style.display = 'none';
+        if (this.progressInterval) {
+            clearInterval(this.progressInterval);
+        }
+    }
+    
+    displayResult(imageData, parameters) {
+        this.currentImage = imageData;
+        
+        // 画像を表示
+        this.elements.resultImage.src = imageData;
+        this.elements.resultImage.style.display = 'block';
+        this.elements.placeholder.style.display = 'none';
+        this.elements.imageControls.style.display = 'block';
+        
+        // 生成情報を表示
+        this.elements.generationInfo.innerHTML = `
+            ${parameters.width}×${parameters.height}px<br>
+            ピクセル: ${parameters.pixel_size}px<br>
+            パレット: ${parameters.palette_size}色<br>
+            ステップ: ${parameters.steps}<br>
+            ${parameters.seed ? `シード: ${parameters.seed}` : 'ランダムシード'}
+        `;
+    }
+    
+    downloadImage() {
+        if (!this.currentImage) return;
+        
+        const link = document.createElement('a');
+        link.href = this.currentImage;
+        link.download = `pixel-art-${Date.now()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        this.showStatus('画像をダウンロードしました', 'success');
+    }
+    
+    async copyToClipboard() {
+        if (!this.currentImage) return;
+        
+        try {
+            // Base64データをBlobに変換
+            const response = await fetch(this.currentImage);
+            const blob = await response.blob();
+            
+            // クリップボードにコピー
+            await navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': blob })
+            ]);
+            
+            this.showStatus('クリップボードにコピーしました', 'success');
+        } catch (error) {
+            console.error('コピーエラー:', error);
+            this.showStatus('コピーに失敗しました', 'error');
+        }
+    }
+    
+    showStatus(message, type = 'info') {
+        // 既存のアラートを削除
+        const existingAlert = document.querySelector('.status-alert');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+        
+        // アラートを作成
+        const alertClass = {
+            'success': 'alert-success',
+            'error': 'alert-danger',
+            'warning': 'alert-warning',
+            'info': 'alert-info'
+        }[type] || 'alert-info';
+        
+        const alert = document.createElement('div');
+        alert.className = `alert ${alertClass} alert-dismissible fade show status-alert position-fixed`;
+        alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        alert.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(alert);
+        
+        // 5秒後に自動削除
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.remove();
+            }
+        }, 5000);
+    }
+}
+
+// アプリケーション初期化
+document.addEventListener('DOMContentLoaded', () => {
+    new PixelArtGenerator();
+});
