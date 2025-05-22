@@ -266,12 +266,36 @@ class PixelArtGenerator {
     }
     
     async copyToClipboard() {
-        if (!this.currentImage) return;
+        if (!this.currentImage) {
+            this.showStatus('コピーする画像がありません', 'error');
+            return;
+        }
         
         try {
+            // Clipboard API対応チェック
+            if (!navigator.clipboard || !navigator.clipboard.write) {
+                throw new Error('Clipboard API not supported');
+            }
+            
+            // HTTPS接続チェック（localhost以外）
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+                throw new Error('Clipboard API requires HTTPS connection');
+            }
+            
+            // Base64データの形式確認
+            console.log('Current image data:', this.currentImage.substring(0, 50));
+            
             // Base64データをBlobに変換
-            const response = await fetch(this.currentImage);
-            const blob = await response.blob();
+            const base64Data = this.currentImage.replace(/^data:image\/png;base64,/, '');
+            const binaryString = atob(base64Data);
+            const bytes = new Uint8Array(binaryString.length);
+            
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            
+            const blob = new Blob([bytes], { type: 'image/png' });
+            console.log('Blob created:', blob.size, 'bytes');
             
             // クリップボードにコピー
             await navigator.clipboard.write([
@@ -279,9 +303,18 @@ class PixelArtGenerator {
             ]);
             
             this.showStatus('クリップボードにコピーしました', 'success');
+            
         } catch (error) {
             console.error('コピーエラー:', error);
-            this.showStatus('コピーに失敗しました', 'error');
+            
+            // フォールバック: URLをコピー
+            try {
+                await navigator.clipboard.writeText(this.currentImage);
+                this.showStatus('画像データURLをクリップボードにコピーしました', 'warning');
+            } catch (fallbackError) {
+                console.error('フォールバックも失敗:', fallbackError);
+                this.showStatus(`コピーに失敗しました: ${error.message}`, 'error');
+            }
         }
     }
     
