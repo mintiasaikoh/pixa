@@ -29,22 +29,34 @@ M2 Pro Mac向けに最適化されたStable Diffusionベースのピクセルア
 - pip (Python package manager)
 - 十分な空き容量（モデルファイル用に約5GB）
 
-### 2. アプリケーション起動
+### 2. インストール
 
 ```bash
-# プロジェクトディレクトリに移動
-cd /Users/mymac/fracta/ai-pixel-generator
+# リポジトリをクローン
+git clone https://github.com/mintiasaikoh/pixa.git
+cd pixa
 
-# 起動スクリプトを実行
+# Python仮想環境を作成（推奨）
+python3 -m venv venv
+source venv/bin/activate
+
+# 依存関係をインストール
+pip install -r backend/requirements.txt
+```
+
+### 3. アプリケーション起動
+
+```bash
+# 起動スクリプトを実行（自動で仮想環境作成・依存関係インストール）
 ./start_server.sh
 ```
 
-初回起動時は、依存関係のインストールとStable Diffusionモデルのダウンロードが自動で行われます。
+初回起動時は、Stable Diffusionモデルのダウンロードが自動で行われます（約5GB、数分かかります）。
 
 ### 3. アプリケーション使用
 
-1. ブラウザで http://localhost:8080 にアクセス
-2. プロンプトを入力（例：「a cute cat warrior in a forest」）
+1. ブラウザで http://localhost:5001 にアクセス
+2. プロンプトを入力（例：「可愛い猫の戦士」または「a cute cat warrior in a forest」）
 3. 必要に応じてパラメータを調整
 4. 「ピクセルアートを生成」ボタンをクリック
 5. 生成された画像をダウンロード
@@ -122,16 +134,31 @@ Pixaは日本語プロンプトを自動的に英語に翻訳してStable Diffus
 ### アーキテクチャ
 
 ```
-ai-pixel-generator/
+pixa/
 ├── backend/           # Python Flask サーバー
 │   ├── server.py     # メインサーバーコード
-│   └── requirements.txt
+│   └── requirements.txt  # Python依存関係
 ├── frontend/         # Web UI
 │   ├── index.html    # メインHTML
 │   ├── style.css     # スタイルシート
 │   └── app.js        # JavaScript
 ├── start_server.sh   # 起動スクリプト
-└── stop_server.sh    # 停止スクリプト
+├── stop_server.sh    # 停止スクリプト
+├── README.md         # このファイル
+└── LICENSE           # MIT License
+```
+
+### 依存関係 (requirements.txt)
+
+```
+flask==2.3.3
+flask-cors==4.0.0
+torch
+diffusers
+transformers
+accelerate
+pillow
+numpy
 ```
 
 ### 使用技術
