@@ -209,7 +209,34 @@ def translate_japanese_to_english(text):
         '火': 'fire',
         '雷': 'lightning',
         '雪': 'snow',
-        '雲': 'cloud'
+        '雲': 'cloud',
+        
+        # ネガティブプロンプト用
+        'ぼやけた': 'blurry',
+        'ぼけた': 'blurry',
+        '低品質': 'low quality',
+        '低画質': 'low quality',
+        '悪い': 'bad',
+        '変な': 'weird',
+        'おかしい': 'weird',
+        '歪んだ': 'distorted',
+        '崩れた': 'broken',
+        '汚い': 'dirty',
+        'きたない': 'dirty',
+        '醜い': 'ugly',
+        'みにくい': 'ugly',
+        '不自然な': 'unnatural',
+        '暗い': 'dark',
+        '薄い': 'faded',
+        'ノイズ': 'noise',
+        '粗い': 'rough',
+        'あらい': 'rough',
+        '解剖学的に': 'anatomy',
+        '指が': 'fingers',
+        '手が': 'hands',
+        '余分な': 'extra',
+        '欠けた': 'missing',
+        '重複した': 'duplicate'
     }
     
     # 日本語が含まれているかチェック
@@ -384,6 +411,8 @@ def generate_pixel_art():
         
         # プロンプト強化
         enhanced_prompt = enhance_pixel_art_prompt(prompt)
+        # ネガティブプロンプトも日本語対応
+        enhanced_negative_prompt = translate_japanese_to_english(negative_prompt)
         
         # シード設定（MPSではCPUジェネレーターを使用）
         if seed is not None:
@@ -402,7 +431,7 @@ def generate_pixel_art():
             with torch.no_grad():
                 result = pipeline(
                     prompt=enhanced_prompt,
-                    negative_prompt=negative_prompt,
+                    negative_prompt=enhanced_negative_prompt,
                     num_inference_steps=num_inference_steps,
                     guidance_scale=guidance_scale,
                     width=width,
@@ -451,7 +480,7 @@ def generate_pixel_art():
             'image': f"data:image/png;base64,{image_base64}",
             'parameters': {
                 'prompt': enhanced_prompt,
-                'negative_prompt': negative_prompt,
+                'negative_prompt': enhanced_negative_prompt,
                 'steps': num_inference_steps,
                 'guidance_scale': guidance_scale,
                 'seed': seed,
@@ -470,32 +499,44 @@ def generate_pixel_art():
 def get_presets():
     """プリセット一覧を返す"""
     presets = {
-        '8bit_classic': {
-            'name': '8-bit クラシック',
+        '8bit': {
+            'name': '8-bit',
+            'description': 'ファミコン風のドット絵',
             'pixel_size': 8,
             'palette_size': 8,
             'steps': 20,
             'guidance_scale': 7.5
         },
-        '16bit_game': {
-            'name': '16-bit ゲーム',
+        '16bit': {
+            'name': '16-bit',
+            'description': 'スーパーファミコン風の細かいドット',
             'pixel_size': 6,
             'palette_size': 16,
             'steps': 25,
             'guidance_scale': 8.0
         },
-        'rpg_sprite': {
-            'name': 'RPG スプライト',
+        'gameboy': {
+            'name': 'ゲームボーイ風',
+            'description': '緑っぽいモノトーン4色',
+            'pixel_size': 10,
+            'palette_size': 4,
+            'steps': 20,
+            'guidance_scale': 7.0
+        },
+        'minimal': {
+            'name': 'ミニマル',
+            'description': 'シンプルで洗練されたデザイン',
+            'pixel_size': 12,
+            'palette_size': 6,
+            'steps': 15,
+            'guidance_scale': 6.5
+        },
+        'detailed': {
+            'name': '高精細',
+            'description': '細かく美しい表現',
             'pixel_size': 4,
             'palette_size': 32,
             'steps': 30,
-            'guidance_scale': 7.0
-        },
-        'arcade_style': {
-            'name': 'アーケードスタイル',
-            'pixel_size': 10,
-            'palette_size': 12,
-            'steps': 20,
             'guidance_scale': 8.5
         }
     }
@@ -529,6 +570,8 @@ def generate_animation():
         
         # プロンプト拡張
         enhanced_prompt = enhance_pixel_art_prompt(prompt)
+        # ネガティブプロンプトも日本語対応
+        enhanced_negative_prompt = translate_japanese_to_english(negative_prompt)
         if animation_type in ['walk', 'run']:
             enhanced_prompt += ", character sprite sheet, walking animation"
         elif animation_type == 'idle':
@@ -550,7 +593,7 @@ def generate_animation():
         with torch.no_grad():
             result = pipeline(
                 prompt=enhanced_prompt,
-                negative_prompt=negative_prompt,
+                negative_prompt=enhanced_negative_prompt,
                 num_inference_steps=num_inference_steps,
                 guidance_scale=guidance_scale,
                 width=width,
@@ -599,6 +642,92 @@ def generate_animation():
         
     except Exception as e:
         logger.error(f"Animation generation error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/animate_existing', methods=['POST'])
+def animate_existing_image():
+    """
+    既存の画像をアニメーション化するエンドポイント
+    """
+    try:
+        data = request.json
+        
+        # パラメータ取得
+        base_image_data = data.get('base_image', '')
+        animation_type = data.get('animation_type', 'idle')
+        frame_count = min(max(data.get('frame_count', 4), 2), 16)
+        fps = min(max(data.get('fps', 10), 5), 30)
+        pixel_size = min(max(data.get('pixel_size', 8), 2), 20)
+        palette_size = min(max(data.get('palette_size', 16), 4), 64)
+        
+        if not base_image_data:
+            return jsonify({
+                'success': False,
+                'error': 'No base image provided'
+            }), 400
+        
+        # Base64データから画像を復元
+        try:
+            # データURIスキームを削除
+            if base_image_data.startswith('data:image'):
+                base_image_data = base_image_data.split(',')[1]
+            
+            # Base64デコード
+            image_bytes = base64.b64decode(base_image_data)
+            base_image = Image.open(io.BytesIO(image_bytes))
+            
+            # RGBに変換（透明度がある場合）
+            if base_image.mode != 'RGB':
+                base_image = base_image.convert('RGB')
+                
+        except Exception as e:
+            logger.error(f"Failed to decode base image: {e}")
+            return jsonify({
+                'success': False,
+                'error': 'Invalid base image data'
+            }), 400
+        
+        logger.info(f"Animating existing image: type={animation_type}, frames={frame_count}, fps={fps}")
+        
+        # アニメーションフレーム生成
+        frames = create_animation_frames(
+            base_image,
+            animation_type,
+            frame_count,
+            pixel_size,
+            palette_size
+        )
+        
+        # GIFに変換
+        gif_buffer = io.BytesIO()
+        duration = 1000 / fps  # ミリ秒単位
+        imageio.mimsave(
+            gif_buffer,
+            frames,
+            format='GIF',
+            duration=duration,
+            loop=0  # 無限ループ
+        )
+        
+        gif_buffer.seek(0)
+        
+        # Base64エンコード
+        gif_base64 = base64.b64encode(gif_buffer.getvalue()).decode('utf-8')
+        
+        return jsonify({
+            'success': True,
+            'image': f'data:image/gif;base64,{gif_base64}',
+            'animation_type': animation_type,
+            'frame_count': frame_count,
+            'fps': fps,
+            'message': 'Animation created from existing image'
+        })
+        
+    except Exception as e:
+        logger.error(f"Animation from existing image error: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)

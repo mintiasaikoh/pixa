@@ -8,6 +8,8 @@ class PixelArtGenerator {
         this.isGenerating = false;
         this.currentImage = null;
         this.currentAnimation = null;
+        this.savedImageForAnimation = null;
+        this.lastGenerationParams = null;
         
         this.initializeElements();
         this.bindEvents();
@@ -41,8 +43,10 @@ class PixelArtGenerator {
             imageControls: document.getElementById('image-controls'),
             downloadBtn: document.getElementById('download-btn'),
             copyBtn: document.getElementById('copy-btn'),
+            animateBtn: document.getElementById('animate-btn'),
             generationInfo: document.getElementById('generation-info'),
             quickPrompts: document.querySelectorAll('.quick-prompt'),
+            presetDescription: document.getElementById('preset-description'),
             // アニメーション関連
             animationType: document.getElementById('animation-type'),
             frameCount: document.getElementById('frame-count'),
@@ -50,7 +54,10 @@ class PixelArtGenerator {
             fps: document.getElementById('fps'),
             fpsValue: document.getElementById('fps-value'),
             generateAnimationBtn: document.getElementById('generate-animation-btn'),
-            downloadGifBtn: document.getElementById('download-gif-btn')
+            downloadGifBtn: document.getElementById('download-gif-btn'),
+            animationStatus: document.getElementById('animation-status'),
+            animationStatusText: document.getElementById('animation-status-text'),
+            newImageBtn: document.getElementById('new-image-btn')
         };
     }
     
@@ -83,7 +90,7 @@ class PixelArtGenerator {
         });
         
         this.elements.frameCount.addEventListener('input', (e) => {
-            this.elements.frameCountValue.textContent = e.target.value;
+            this.elements.frameCountValue.textContent = e.target.value + 'コマ';
         });
         
         this.elements.fps.addEventListener('input', (e) => {
@@ -93,6 +100,7 @@ class PixelArtGenerator {
         // プリセット変更
         this.elements.preset.addEventListener('change', (e) => {
             this.applyPreset(e.target.value);
+            this.updatePresetDescription(e.target.value);
         });
         
         // ダウンロードボタン
@@ -101,11 +109,17 @@ class PixelArtGenerator {
         // コピーボタン
         this.elements.copyBtn.addEventListener('click', () => this.copyToClipboard());
         
+        // アニメーション化ボタン
+        this.elements.animateBtn.addEventListener('click', () => this.animateCurrentImage());
+        
         // アニメーション生成ボタン
         this.elements.generateAnimationBtn.addEventListener('click', () => this.generateAnimation());
         
         // GIFダウンロードボタン
         this.elements.downloadGifBtn.addEventListener('click', () => this.downloadGif());
+        
+        // 新しい画像を生成ボタン
+        this.elements.newImageBtn.addEventListener('click', () => this.resetToNewImage());
         
         // クイックプロンプト
         this.elements.quickPrompts.forEach(btn => {
@@ -169,6 +183,19 @@ class PixelArtGenerator {
         
         this.elements.guidance.value = preset.guidance_scale;
         this.elements.guidanceValue.textContent = preset.guidance_scale;
+    }
+    
+    updatePresetDescription(presetKey) {
+        if (!presetKey) {
+            this.elements.presetDescription.textContent = '';
+            return;
+        }
+        
+        if (this.presets && this.presets[presetKey] && this.presets[presetKey].description) {
+            this.elements.presetDescription.textContent = this.presets[presetKey].description;
+        } else {
+            this.elements.presetDescription.textContent = '';
+        }
     }
     
     async generateImage() {
@@ -259,6 +286,12 @@ class PixelArtGenerator {
     displayResult(imageData, parameters) {
         this.currentImage = imageData;
         this.currentAnimation = null;  // 静止画生成時はアニメーションをリセット
+        this.lastGenerationParams = parameters; // パラメータを保存
+        this.savedImageForAnimation = null; // 新しい画像が生成されたらアニメーション用の保存画像もリセット
+        
+        // アニメーション関連UIをリセット
+        this.elements.animationStatus.style.display = 'none';
+        this.elements.newImageBtn.style.display = 'none';
         
         // 画像を表示
         this.elements.resultImage.src = imageData;
@@ -280,6 +313,55 @@ class PixelArtGenerator {
     async generateAnimation() {
         if (this.isGenerating) return;
         
+        // 保存された画像がある場合はそれを使用
+        if (this.savedImageForAnimation) {
+            this.startAnimationGeneration();
+            
+            try {
+                const params = {
+                    base_image: this.savedImageForAnimation.image,
+                    prompt: this.savedImageForAnimation.params.prompt,
+                    animation_type: this.elements.animationType.value,
+                    frame_count: parseInt(this.elements.frameCount.value),
+                    fps: parseInt(this.elements.fps.value),
+                    width: this.savedImageForAnimation.params.width,
+                    height: this.savedImageForAnimation.params.height,
+                    pixel_size: this.savedImageForAnimation.params.pixel_size,
+                    palette_size: this.savedImageForAnimation.params.palette_size
+                };
+                
+                const response = await fetch(`${this.apiUrl}/animate_existing`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(params)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.displayAnimationResult(data.image, data);
+                    this.showStatus('アニメーション生成完了！', 'success');
+                    // savedImageForAnimationは保持し続ける（リセットしない）
+                } else {
+                    throw new Error(data.error || 'アニメーション生成に失敗しました');
+                }
+                
+            } catch (error) {
+                console.error('アニメーション生成エラー:', error);
+                this.showStatus(`エラー: ${error.message}`, 'error');
+            } finally {
+                this.endAnimationGeneration();
+            }
+            return;
+        }
+        
+        // 通常のアニメーション生成
         const prompt = this.elements.prompt.value.trim();
         if (!prompt) {
             this.showStatus('プロンプトを入力してください', 'error');
@@ -451,6 +533,53 @@ class PixelArtGenerator {
                 this.showStatus(`コピーに失敗しました: ${error.message}`, 'error');
             }
         }
+    }
+    
+    async animateCurrentImage() {
+        if (!this.currentImage) {
+            this.showStatus('アニメーション化する画像がありません', 'error');
+            return;
+        }
+        
+        // アニメーション設定アコーディオンを開く
+        const animationCollapse = document.getElementById('animationCollapse');
+        const bsCollapse = new bootstrap.Collapse(animationCollapse, {
+            show: true
+        });
+        
+        // アニメーション生成ボタンにフォーカス
+        this.elements.generateAnimationBtn.scrollIntoView({ behavior: 'smooth' });
+        
+        // 現在の画像パラメータを保存
+        this.savedImageForAnimation = {
+            image: this.currentImage,
+            params: this.lastGenerationParams
+        };
+        
+        // ステータス表示
+        this.elements.animationStatus.style.display = 'block';
+        this.elements.animationStatusText.textContent = '選択された画像をアニメーション化できます';
+        this.elements.newImageBtn.style.display = 'block';
+        
+        this.showStatus('アニメーション設定を調整して「アニメーションを生成」を押してください', 'info');
+    }
+    
+    resetToNewImage() {
+        // アニメーション化モードを解除
+        this.savedImageForAnimation = null;
+        this.elements.animationStatus.style.display = 'none';
+        this.elements.newImageBtn.style.display = 'none';
+        
+        // アニメーション設定を閉じる
+        const animationCollapse = document.getElementById('animationCollapse');
+        const bsCollapse = new bootstrap.Collapse(animationCollapse, {
+            hide: true
+        });
+        
+        // プロンプト入力欄にフォーカス
+        this.elements.prompt.focus();
+        
+        this.showStatus('新しい静止画を生成してください', 'info');
     }
     
     showStatus(message, type = 'info') {

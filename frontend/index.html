@@ -37,7 +37,7 @@
                         id="negative-prompt" 
                         class="form-control" 
                         rows="2" 
-                        placeholder="blurry, low quality, bad anatomy"></textarea>
+                        placeholder="例: ぼやけた, 低品質, 変な手 (日本語OK!) または blurry, low quality, bad anatomy"></textarea>
                 </div>
                 
                 <!-- プリセット選択 -->
@@ -46,6 +46,7 @@
                     <select id="preset" class="form-select">
                         <option value="">カスタム</option>
                     </select>
+                    <small id="preset-description" class="text-muted d-block mt-1"></small>
                 </div>
                 
                 <!-- パラメータ設定 -->
@@ -152,40 +153,60 @@
                         </h2>
                         <div id="animationCollapse" class="accordion-collapse collapse" aria-labelledby="animationHeading" data-bs-parent="#animationAccordion">
                             <div class="accordion-body">
+                                <!-- 説明テキスト -->
+                                <div class="alert alert-info mb-3">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    静止画を生成後「アニメーション化」ボタンを押すと、その画像を動かせます
+                                </div>
+                                
+                                <!-- 現在の画像状態 -->
+                                <div id="animation-status" class="alert alert-secondary mb-3" style="display: none;">
+                                    <i class="fas fa-image me-1"></i>
+                                    <span id="animation-status-text">選択された画像をアニメーション化します</span>
+                                </div>
+                                
                                 <!-- アニメーションタイプ -->
                                 <div class="mb-3">
-                                    <label for="animation-type" class="form-label">アニメーションタイプ</label>
+                                    <label for="animation-type" class="form-label">動きのタイプ</label>
                                     <select id="animation-type" class="form-select">
-                                        <option value="idle">待機（上下動）</option>
-                                        <option value="walk">歩行（左右傾き）</option>
-                                        <option value="bounce">バウンス</option>
-                                        <option value="glow">発光</option>
-                                        <option value="rotate">回転</option>
+                                        <option value="idle">ゆらゆら（待機モーション）</option>
+                                        <option value="walk">ぴょんぴょん（歩くような動き）</option>
+                                        <option value="bounce">ジャンプ（弾むような動き）</option>
+                                        <option value="glow">キラキラ（光る効果）</option>
+                                        <option value="rotate">くるくる（回転）</option>
                                     </select>
                                 </div>
                                 
                                 <!-- フレーム数 -->
                                 <div class="mb-3">
                                     <label for="frame-count" class="form-label">
-                                        フレーム数: <span id="frame-count-value">4</span>
+                                        動きの滑らかさ: <span id="frame-count-value">4</span>コマ
                                     </label>
                                     <input type="range" id="frame-count" class="form-range" 
                                            min="2" max="16" value="4">
+                                    <small class="text-muted">多いほど滑らか（ファイルサイズ大）</small>
                                 </div>
                                 
                                 <!-- FPS -->
                                 <div class="mb-3">
                                     <label for="fps" class="form-label">
-                                        FPS: <span id="fps-value">10</span>
+                                        動きの速さ: <span id="fps-value">10</span>
                                     </label>
                                     <input type="range" id="fps" class="form-range" 
                                            min="5" max="30" value="10">
+                                    <small class="text-muted">5=ゆっくり ← → 30=速い</small>
                                 </div>
                                 
                                 <!-- アニメーション生成ボタン -->
-                                <button id="generate-animation-btn" class="btn btn-warning w-100">
+                                <button id="generate-animation-btn" class="btn btn-warning w-100 mb-2">
                                     <i class="fas fa-play-circle me-2"></i>
                                     アニメーションを生成
+                                </button>
+                                
+                                <!-- 新しい画像を生成ボタン -->
+                                <button id="new-image-btn" class="btn btn-secondary w-100" style="display: none;">
+                                    <i class="fas fa-redo me-2"></i>
+                                    新しい静止画を生成する
                                 </button>
                             </div>
                         </div>
@@ -237,6 +258,9 @@
                                 </button>
                                 <button id="copy-btn" class="btn btn-info me-2">
                                     <i class="fas fa-copy me-1"></i>クリップボードにコピー
+                                </button>
+                                <button id="animate-btn" class="btn btn-primary me-2">
+                                    <i class="fas fa-play-circle me-1"></i>アニメーション化
                                 </button>
                                 <button id="download-gif-btn" class="btn btn-warning me-2" style="display: none;">
                                     <i class="fas fa-file-video me-1"></i>GIFダウンロード
