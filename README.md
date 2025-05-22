@@ -15,9 +15,11 @@ M2 Pro Mac向けに最適化されたStable Diffusionベースのピクセルア
 - **🎮 ピクセルアート特化**: 自動的にピクセルアート風の後処理を適用
 - **🎨 カラーパレット制限**: レトロゲーム風の色数制限機能
 - **🌐 直感的なWeb UI**: モダンで使いやすいインターフェース
+- **🖥️ デスクトップアプリ**: pygame版でネイティブデスクトップ体験
 - **⚡ 高速生成**: 512×512px画像が約10-15秒
 - **🇯🇵 日本語プロンプト対応**: 自動翻訳で日本語入力をサポート
 - **🎯 複数のスタイルプリセット**: 8-bit、16-bit、RPG、アーケードスタイル
+- **🎬 アニメーション生成**: 動くGIFアニメーションの生成機能
 
 ## 🚀 クイックスタート
 
@@ -46,26 +48,43 @@ pip install -r backend/requirements.txt
 
 ### 3. アプリケーション起動
 
+#### Web版（ブラウザー）
 ```bash
-# 起動スクリプトを実行（自動で仮想環境作成・依存関係インストール）
+# Web版起動スクリプトを実行（自動で仮想環境作成・依存関係インストール）
 ./start_server.sh
+```
+
+#### デスクトップ版（pygame）
+```bash
+# デスクトップ版起動スクリプトを実行
+./start_pygame.sh
 ```
 
 初回起動時は、Stable Diffusionモデルのダウンロードが自動で行われます（約5GB、数分かかります）。
 
-### 3. アプリケーション使用
+### 4. アプリケーション使用
 
+#### Web版
 1. ブラウザで http://localhost:5001 にアクセス
 2. プロンプトを入力（例：「可愛い猫の戦士」または「a cute cat warrior in a forest」）
 3. 必要に応じてパラメータを調整
 4. 「ピクセルアートを生成」ボタンをクリック
 5. 生成された画像をダウンロード
 
-### 4. アプリケーション停止
+#### デスクトップ版
+1. pygame アプリケーションが自動で起動
+2. プロンプトを入力
+3. スライダーでパラメータを調整
+4. 「ピクセルアートを生成」ボタンをクリック（またはCtrl+Enter）
+5. 「保存」ボタンで画像を保存（またはCtrl+S）
+
+### 5. アプリケーション停止
 
 ```bash
-# 停止スクリプトを実行
+# Web版停止スクリプトを実行
 ./stop_server.sh
+
+# デスクトップ版: ウィンドウを閉じるか、ターミナルで Ctrl+C
 
 # または起動中のターミナルで Ctrl+C
 ```
@@ -114,6 +133,7 @@ Pixaは日本語プロンプトを自動的に英語に翻訳してStable Diffus
 - キャラクター: 騎士、魔法使い、忍者、侍等
 - 場所: 城、森、海、山、空等
 - 形容詞: 可愛い、美しい、強い、魔法の等
+- アニメーション: 歩く、走る、ジャンプ、待機、アイドル、回転、光る等
 
 ### 高度な機能
 
@@ -121,6 +141,29 @@ Pixaは日本語プロンプトを自動的に英語に翻訳してStable Diffus
 - **シード値**: 同じ結果を再現するための値
 - **画像サイズ**: 256px〜768pxまで選択可能
 - **クイックプロンプト**: よく使用されるプロンプトのワンクリック入力
+
+### 🎬 アニメーション生成機能
+
+Pixaは静止画だけでなく、動くGIFアニメーションも生成できます。
+
+**アニメーションタイプ:**
+- **待機（idle）**: キャラクターの上下動
+- **歩行（walk）**: 左右に傾く歩行動作
+- **バウンス（bounce）**: 弾むような動き
+- **発光（glow）**: 明るさが変化する発光エフェクト
+- **回転（rotate）**: 360度回転
+
+**アニメーションパラメータ:**
+- **フレーム数**: 2〜16フレーム（デフォルト: 4）
+- **FPS**: 5〜30 FPS（デフォルト: 10）
+
+**使用方法:**
+1. まず通常通りプロンプトを入力
+2. 「アニメーション設定」を展開
+3. アニメーションタイプを選択
+4. フレーム数とFPSを調整
+5. 「アニメーションを生成」ボタンをクリック
+6. 生成されたGIFは「GIFダウンロード」ボタンで保存可能
 
 ## 🔧 技術詳細
 
@@ -142,7 +185,9 @@ pixa/
 │   ├── index.html    # メインHTML
 │   ├── style.css     # スタイルシート
 │   └── app.js        # JavaScript
-├── start_server.sh   # 起動スクリプト
+├── pygame_app.py     # デスクトップ版 pygame アプリ
+├── start_server.sh   # Web版起動スクリプト
+├── start_pygame.sh   # デスクトップ版起動スクリプト
 ├── stop_server.sh    # 停止スクリプト
 ├── README.md         # このファイル
 └── LICENSE           # MIT License
@@ -159,6 +204,11 @@ transformers
 accelerate
 pillow
 numpy
+pygame
+pygame-gui
+requests
+imageio==2.31.1
+imageio-ffmpeg==0.4.8
 ```
 
 ### 使用技術
@@ -166,7 +216,8 @@ numpy
 - **バックエンド**: Python, Flask, PyTorch, Diffusers
 - **AI**: Stable Diffusion v1.5
 - **最適化**: Apple MPS (Metal Performance Shaders)
-- **フロントエンド**: HTML5, CSS3, JavaScript, Bootstrap 5
+- **Web版**: HTML5, CSS3, JavaScript, Bootstrap 5
+- **デスクトップ版**: pygame, pygame-gui
 
 ## 🎯 パフォーマンス最適化
 
@@ -182,6 +233,8 @@ numpy
 - **512×512px, 20steps**: 約10-15秒 (M2 Pro)
 - **256×256px, 20steps**: 約5-8秒 (M2 Pro)
 - **768×768px, 30steps**: 約20-30秒 (M2 Pro)
+- **アニメーション 512×512px, 4フレーム**: 約20-30秒 (M2 Pro)
+- **アニメーション 512×512px, 8フレーム**: 約40-60秒 (M2 Pro)
 
 ## 🔍 トラブルシューティング
 
@@ -245,6 +298,11 @@ a mystical castle on a floating island, pixel art, retro game style, clouds and 
 
 # オブジェクト
 a magical sword with glowing runes, pixel art sprite, 16-bit style, transparent background
+
+# アニメーション用
+a pixel art knight character, side view, clean sprite sheet style
+a cute slime monster, simple design, suitable for animation
+a flying dragon, pixel art, clear silhouette
 ```
 
 ## 🤝 サポート

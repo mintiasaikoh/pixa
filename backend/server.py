@@ -10,13 +10,15 @@ from flask_cors import CORS
 import torch
 from diffusers import StableDiffusionPipeline
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ImageEnhance
 import io
 import base64
 import os
 import logging
 from datetime import datetime
 import re
+import imageio
+import math
 
 # ログ設定
 logging.basicConfig(level=logging.INFO)
@@ -182,6 +184,16 @@ def translate_japanese_to_english(text):
         '走っている': 'running',
         '戦っている': 'fighting',
         '笑っている': 'smiling',
+        '歩く': 'walk',
+        '走る': 'run',
+        'ジャンプ': 'jump',
+        '待機': 'idle',
+        'アイドル': 'idle',
+        '点滅': 'blink',
+        '揺れる': 'sway',
+        '回転': 'rotate',
+        'バウンス': 'bounce',
+        '光る': 'glow',
         
         # その他
         '剣': 'sword',
@@ -241,6 +253,97 @@ def enhance_pixel_art_prompt(prompt):
         prompt = f"{prompt}, pixel art style, 8-bit, retro game sprite"
     
     return prompt
+
+def create_animation_frames(base_image, animation_type, frame_count, pixel_size, palette_size):
+    """
+    ベース画像からアニメーションフレームを生成
+    
+    Args:
+        base_image: PIL Image - ベースとなる画像
+        animation_type: str - アニメーションタイプ
+        frame_count: int - フレーム数
+        pixel_size: int - ピクセルサイズ
+        palette_size: int - パレットサイズ
+    
+    Returns:
+        list of PIL Images - アニメーションフレーム
+    """
+    frames = []
+    
+    if animation_type == "idle":
+        # アイドルアニメーション（上下に微妙に動く）
+        for i in range(frame_count):
+            frame = base_image.copy()
+            # サインカーブで滑らかな上下動
+            offset_y = int(5 * math.sin(2 * math.pi * i / frame_count))
+            
+            # 画像をシフト
+            new_frame = Image.new('RGB', base_image.size, (0, 0, 0))
+            new_frame.paste(frame, (0, offset_y))
+            
+            # ピクセルアート処理
+            frame = apply_pixel_art_processing(new_frame, pixel_size, palette_size)
+            frames.append(frame)
+            
+    elif animation_type == "walk":
+        # 歩行アニメーション（左右に傾く）
+        for i in range(frame_count):
+            frame = base_image.copy()
+            # 回転角度
+            angle = 5 * math.sin(2 * math.pi * i / frame_count)
+            
+            # 回転
+            frame = frame.rotate(angle, expand=False, fillcolor=(0, 0, 0))
+            
+            # ピクセルアート処理
+            frame = apply_pixel_art_processing(frame, pixel_size, palette_size)
+            frames.append(frame)
+            
+    elif animation_type == "glow":
+        # 発光エフェクト（明るさを変化）
+        for i in range(frame_count):
+            frame = base_image.copy()
+            # 明るさの変化
+            brightness_factor = 0.8 + 0.4 * math.sin(2 * math.pi * i / frame_count)
+            
+            # 明度調整
+            enhancer = ImageEnhance.Brightness(frame)
+            frame = enhancer.enhance(brightness_factor)
+            
+            # ピクセルアート処理
+            frame = apply_pixel_art_processing(frame, pixel_size, palette_size)
+            frames.append(frame)
+            
+    elif animation_type == "bounce":
+        # バウンスアニメーション
+        for i in range(frame_count):
+            frame = base_image.copy()
+            # バウンス計算
+            t = i / (frame_count - 1) if frame_count > 1 else 0
+            height = abs(math.sin(math.pi * t)) * 20
+            
+            # 画像をシフト
+            new_frame = Image.new('RGB', base_image.size, (0, 0, 0))
+            new_frame.paste(frame, (0, -int(height)))
+            
+            # ピクセルアート処理
+            frame = apply_pixel_art_processing(new_frame, pixel_size, palette_size)
+            frames.append(frame)
+            
+    else:  # default or "rotate"
+        # 回転アニメーション
+        for i in range(frame_count):
+            frame = base_image.copy()
+            angle = 360 * i / frame_count
+            
+            # 回転
+            frame = frame.rotate(angle, expand=False, fillcolor=(0, 0, 0))
+            
+            # ピクセルアート処理
+            frame = apply_pixel_art_processing(frame, pixel_size, palette_size)
+            frames.append(frame)
+    
+    return frames
 
 @app.route('/')
 def index():
@@ -398,6 +501,108 @@ def get_presets():
     }
     
     return jsonify(presets)
+
+@app.route('/generate_animation', methods=['POST'])
+def generate_animation():
+    """
+    動くGIFを生成するエンドポイント
+    """
+    if pipeline is None:
+        return jsonify({'error': 'Pipeline not initialized'}), 500
+    
+    try:
+        data = request.json
+        
+        # パラメータ取得
+        prompt = data.get('prompt', 'pixel art character')
+        animation_type = data.get('animation_type', 'idle')
+        frame_count = min(max(data.get('frame_count', 4), 2), 16)  # 2-16フレーム
+        fps = min(max(data.get('fps', 10), 5), 30)  # 5-30 FPS
+        width = min(max(data.get('width', 512), 256), 1024)
+        height = min(max(data.get('height', 512), 256), 1024)
+        pixel_size = min(max(data.get('pixel_size', 8), 2), 20)
+        palette_size = min(max(data.get('palette_size', 16), 4), 64)
+        num_inference_steps = min(max(data.get('steps', 20), 1), 50)
+        guidance_scale = data.get('guidance_scale', 7.5)
+        negative_prompt = data.get('negative_prompt', '')
+        seed = data.get('seed', None)
+        
+        # プロンプト拡張
+        enhanced_prompt = enhance_pixel_art_prompt(prompt)
+        if animation_type in ['walk', 'run']:
+            enhanced_prompt += ", character sprite sheet, walking animation"
+        elif animation_type == 'idle':
+            enhanced_prompt += ", character standing, idle pose"
+        
+        # シード設定
+        if seed is not None:
+            if device == torch.device("mps"):
+                generator = torch.Generator().manual_seed(seed)
+            else:
+                generator = torch.Generator(device=device).manual_seed(seed)
+        else:
+            generator = None
+        
+        logger.info(f"Generating animation with prompt: {enhanced_prompt}")
+        logger.info(f"Animation parameters: type={animation_type}, frames={frame_count}, fps={fps}")
+        
+        # ベース画像生成
+        with torch.no_grad():
+            result = pipeline(
+                prompt=enhanced_prompt,
+                negative_prompt=negative_prompt,
+                num_inference_steps=num_inference_steps,
+                guidance_scale=guidance_scale,
+                width=width,
+                height=height,
+                generator=generator
+            )
+        
+        base_image = result.images[0]
+        logger.info("Base image generated successfully")
+        
+        # アニメーションフレーム生成
+        frames = create_animation_frames(
+            base_image,
+            animation_type,
+            frame_count,
+            pixel_size,
+            palette_size
+        )
+        
+        # GIFに変換
+        gif_buffer = io.BytesIO()
+        
+        # imageioを使用してGIFを作成
+        duration = 1000 / fps  # ミリ秒単位
+        imageio.mimsave(
+            gif_buffer,
+            frames,
+            format='GIF',
+            duration=duration,
+            loop=0  # 無限ループ
+        )
+        
+        gif_buffer.seek(0)
+        
+        # Base64エンコード
+        gif_base64 = base64.b64encode(gif_buffer.getvalue()).decode('utf-8')
+        
+        return jsonify({
+            'success': True,
+            'image': f'data:image/gif;base64,{gif_base64}',
+            'animation_type': animation_type,
+            'frame_count': frame_count,
+            'fps': fps,
+            'message': 'Animation generated successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Animation generation error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 if __name__ == '__main__':
     logger.info("Starting Pixa - AI Pixel Art Generator Backend")

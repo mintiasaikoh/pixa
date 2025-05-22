@@ -7,6 +7,7 @@ class PixelArtGenerator {
         this.apiUrl = '';
         this.isGenerating = false;
         this.currentImage = null;
+        this.currentAnimation = null;
         
         this.initializeElements();
         this.bindEvents();
@@ -41,7 +42,15 @@ class PixelArtGenerator {
             downloadBtn: document.getElementById('download-btn'),
             copyBtn: document.getElementById('copy-btn'),
             generationInfo: document.getElementById('generation-info'),
-            quickPrompts: document.querySelectorAll('.quick-prompt')
+            quickPrompts: document.querySelectorAll('.quick-prompt'),
+            // アニメーション関連
+            animationType: document.getElementById('animation-type'),
+            frameCount: document.getElementById('frame-count'),
+            frameCountValue: document.getElementById('frame-count-value'),
+            fps: document.getElementById('fps'),
+            fpsValue: document.getElementById('fps-value'),
+            generateAnimationBtn: document.getElementById('generate-animation-btn'),
+            downloadGifBtn: document.getElementById('download-gif-btn')
         };
     }
     
@@ -73,6 +82,14 @@ class PixelArtGenerator {
             this.elements.guidanceValue.textContent = e.target.value;
         });
         
+        this.elements.frameCount.addEventListener('input', (e) => {
+            this.elements.frameCountValue.textContent = e.target.value;
+        });
+        
+        this.elements.fps.addEventListener('input', (e) => {
+            this.elements.fpsValue.textContent = e.target.value;
+        });
+        
         // プリセット変更
         this.elements.preset.addEventListener('change', (e) => {
             this.applyPreset(e.target.value);
@@ -83,6 +100,12 @@ class PixelArtGenerator {
         
         // コピーボタン
         this.elements.copyBtn.addEventListener('click', () => this.copyToClipboard());
+        
+        // アニメーション生成ボタン
+        this.elements.generateAnimationBtn.addEventListener('click', () => this.generateAnimation());
+        
+        // GIFダウンロードボタン
+        this.elements.downloadGifBtn.addEventListener('click', () => this.downloadGif());
         
         // クイックプロンプト
         this.elements.quickPrompts.forEach(btn => {
@@ -235,12 +258,14 @@ class PixelArtGenerator {
     
     displayResult(imageData, parameters) {
         this.currentImage = imageData;
+        this.currentAnimation = null;  // 静止画生成時はアニメーションをリセット
         
         // 画像を表示
         this.elements.resultImage.src = imageData;
         this.elements.resultImage.style.display = 'block';
         this.elements.placeholder.style.display = 'none';
         this.elements.imageControls.style.display = 'block';
+        this.elements.downloadGifBtn.style.display = 'none';  // GIFダウンロードボタンを非表示
         
         // 生成情報を表示
         this.elements.generationInfo.innerHTML = `
@@ -250,6 +275,116 @@ class PixelArtGenerator {
             ステップ: ${parameters.steps}<br>
             ${parameters.seed ? `シード: ${parameters.seed}` : 'ランダムシード'}
         `;
+    }
+    
+    async generateAnimation() {
+        if (this.isGenerating) return;
+        
+        const prompt = this.elements.prompt.value.trim();
+        if (!prompt) {
+            this.showStatus('プロンプトを入力してください', 'error');
+            return;
+        }
+        
+        this.startAnimationGeneration();
+        
+        try {
+            const params = {
+                ...this.getGenerationParams(),
+                animation_type: this.elements.animationType.value,
+                frame_count: parseInt(this.elements.frameCount.value),
+                fps: parseInt(this.elements.fps.value)
+            };
+            
+            const response = await fetch(`${this.apiUrl}/generate_animation`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(params)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.displayAnimationResult(data.image, data);
+                this.showStatus('アニメーション生成完了！', 'success');
+            } else {
+                throw new Error(data.error || 'アニメーション生成に失敗しました');
+            }
+            
+        } catch (error) {
+            console.error('アニメーション生成エラー:', error);
+            this.showStatus(`エラー: ${error.message}`, 'error');
+        } finally {
+            this.endAnimationGeneration();
+        }
+    }
+    
+    startAnimationGeneration() {
+        this.isGenerating = true;
+        this.elements.generateAnimationBtn.disabled = true;
+        this.elements.generateAnimationBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>生成中...';
+        
+        this.elements.progressContainer.style.display = 'block';
+        this.elements.progressBar.style.width = '0%';
+        this.elements.progressText.textContent = 'アニメーション生成中...';
+        
+        // プログレスアニメーション
+        this.progressInterval = setInterval(() => {
+            const currentWidth = parseFloat(this.elements.progressBar.style.width) || 0;
+            if (currentWidth < 90) {
+                this.elements.progressBar.style.width = (currentWidth + Math.random() * 10) + '%';
+            }
+        }, 500);
+    }
+    
+    endAnimationGeneration() {
+        this.isGenerating = false;
+        this.elements.generateAnimationBtn.disabled = false;
+        this.elements.generateAnimationBtn.innerHTML = '<i class="fas fa-play-circle me-2"></i>アニメーションを生成';
+        
+        this.elements.progressContainer.style.display = 'none';
+        this.elements.progressText.textContent = '生成中...';
+        if (this.progressInterval) {
+            clearInterval(this.progressInterval);
+        }
+    }
+    
+    displayAnimationResult(gifData, info) {
+        this.currentAnimation = gifData;
+        
+        // GIFを表示
+        this.elements.resultImage.src = gifData;
+        this.elements.resultImage.style.display = 'block';
+        this.elements.placeholder.style.display = 'none';
+        this.elements.imageControls.style.display = 'block';
+        this.elements.downloadGifBtn.style.display = 'inline-block';
+        
+        // 生成情報を表示
+        this.elements.generationInfo.innerHTML = `
+            アニメーション: ${info.animation_type}<br>
+            フレーム数: ${info.frame_count}<br>
+            FPS: ${info.fps}<br>
+            ${info.message || ''}
+        `;
+    }
+    
+    downloadGif() {
+        if (!this.currentAnimation) return;
+        
+        const link = document.createElement('a');
+        link.href = this.currentAnimation;
+        link.download = `pixel-animation-${Date.now()}.gif`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        this.showStatus('GIFアニメーションをダウンロードしました', 'success');
     }
     
     downloadImage() {

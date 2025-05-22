@@ -142,6 +142,56 @@
                     <small id="progress-text" class="text-muted">生成中...</small>
                 </div>
                 
+                <!-- アニメーション設定 -->
+                <div class="accordion mb-3" id="animationAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="animationHeading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#animationCollapse" aria-expanded="false" aria-controls="animationCollapse">
+                                <i class="fas fa-film me-2"></i>アニメーション設定
+                            </button>
+                        </h2>
+                        <div id="animationCollapse" class="accordion-collapse collapse" aria-labelledby="animationHeading" data-bs-parent="#animationAccordion">
+                            <div class="accordion-body">
+                                <!-- アニメーションタイプ -->
+                                <div class="mb-3">
+                                    <label for="animation-type" class="form-label">アニメーションタイプ</label>
+                                    <select id="animation-type" class="form-select">
+                                        <option value="idle">待機（上下動）</option>
+                                        <option value="walk">歩行（左右傾き）</option>
+                                        <option value="bounce">バウンス</option>
+                                        <option value="glow">発光</option>
+                                        <option value="rotate">回転</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- フレーム数 -->
+                                <div class="mb-3">
+                                    <label for="frame-count" class="form-label">
+                                        フレーム数: <span id="frame-count-value">4</span>
+                                    </label>
+                                    <input type="range" id="frame-count" class="form-range" 
+                                           min="2" max="16" value="4">
+                                </div>
+                                
+                                <!-- FPS -->
+                                <div class="mb-3">
+                                    <label for="fps" class="form-label">
+                                        FPS: <span id="fps-value">10</span>
+                                    </label>
+                                    <input type="range" id="fps" class="form-range" 
+                                           min="5" max="30" value="10">
+                                </div>
+                                
+                                <!-- アニメーション生成ボタン -->
+                                <button id="generate-animation-btn" class="btn btn-warning w-100">
+                                    <i class="fas fa-play-circle me-2"></i>
+                                    アニメーションを生成
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- クイックプロンプト -->
                 <div class="mb-3">
                     <label class="form-label">クイックプロンプト</label>
@@ -187,6 +237,9 @@
                                 </button>
                                 <button id="copy-btn" class="btn btn-info me-2">
                                     <i class="fas fa-copy me-1"></i>クリップボードにコピー
+                                </button>
+                                <button id="download-gif-btn" class="btn btn-warning me-2" style="display: none;">
+                                    <i class="fas fa-file-video me-1"></i>GIFダウンロード
                                 </button>
                                 <small class="text-muted d-block mt-1">
                                     💡 右クリック→「画像を保存」でも保存できます

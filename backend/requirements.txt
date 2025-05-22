@@ -6,3 +6,9 @@ transformers
 accelerate
 pillow
 numpy
+pygame>=2.5.0
+requests
+imageio==2.31.1
+imageio-ffmpeg==0.4.8
+imageio==2.31.1
+imageio-ffmpeg==0.4.8
