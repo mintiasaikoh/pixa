@@ -40,6 +40,20 @@
                         placeholder="例: ぼやけた, 低品質, 変な手 (日本語OK!) または blurry, low quality, bad anatomy"></textarea>
                 </div>
                 
+                <!-- モデル選択 -->
+                <div class="mb-4">
+                    <label for="model" class="form-label">
+                        <i class="fas fa-cube me-1"></i>AIモデル
+                    </label>
+                    <select id="model" class="form-select">
+                        <option value="runwayml/stable-diffusion-v1-5" selected>Stable Diffusion v1.5（標準）</option>
+                        <option value="PublicPrompts/All-In-One-Pixel-Model">All-In-One Pixel Model（特殊形式）</option>
+                        <option value="Linaqruf/anything-v3.0">Anything v3.0（アニメ調）</option>
+                        <option value="nerijs/pixel-art-xl">Pixel Art XL（高解像度）</option>
+                    </select>
+                    <small id="model-description" class="text-muted d-block mt-1">汎用的な画像生成モデル。ピクセルアート以外も生成可能</small>
+                </div>
+                
                 <!-- プリセット選択 -->
                 <div class="mb-4">
                     <label for="preset" class="form-label">スタイルプリセット</label>
@@ -88,6 +102,7 @@
                                     </label>
                                     <input type="range" id="pixel-size" class="form-range" 
                                            min="2" max="16" value="8">
+                                    <small class="text-muted">ドットの大きさ（大きいほど粗いピクセルアート）</small>
                                 </div>
                                 
                                 <!-- パレットサイズ -->
@@ -97,6 +112,7 @@
                                     </label>
                                     <input type="range" id="palette-size" class="form-range" 
                                            min="4" max="64" value="16">
+                                    <small class="text-muted">使用する色数（少ないほどレトロな雰囲気）</small>
                                 </div>
                                 
                                 <!-- ステップ数 -->
@@ -106,6 +122,7 @@
                                     </label>
                                     <input type="range" id="steps" class="form-range" 
                                            min="10" max="50" value="20">
+                                    <small class="text-muted">生成の詳細度（多いほど高品質だが時間がかかる）</small>
                                 </div>
                                 
                                 <!-- ガイダンススケール -->
@@ -115,6 +132,7 @@
                                     </label>
                                     <input type="range" id="guidance" class="form-range" 
                                            min="1" max="20" step="0.5" value="7.5">
+                                    <small class="text-muted">プロンプトへの忠実度（高いほどプロンプトに従う）</small>
                                 </div>
                                 
                                 <!-- シード値 -->

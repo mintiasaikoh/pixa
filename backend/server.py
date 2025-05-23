@@ -30,10 +30,11 @@ CORS(app)  # フロントエンドとの通信を許可
 # グローバル変数でパイプラインを保持
 pipeline = None
 device = None
+current_model_id = None
 
-def initialize_pipeline():
+def initialize_pipeline(model_id="runwayml/stable-diffusion-v1-5"):
     """Stable Diffusion パイプラインを初期化"""
-    global pipeline, device
+    global pipeline, device, current_model_id
     
     try:
         # M2 ProのMetal Performance Shaders (MPS) を優先使用
@@ -47,36 +48,48 @@ def initialize_pipeline():
             device = torch.device("cpu")
             logger.info("Using CPU")
         
-        # Stable Diffusion v1.5 パイプライン読み込み
-        model_id = "runwayml/stable-diffusion-v1-5"
+        # Stable Diffusion パイプライン読み込み
         logger.info(f"Loading Stable Diffusion model: {model_id}")
         
-        # MPSでの精度問題を避けるためfloat32を使用
-        dtype = torch.float32 if device == torch.device("mps") else torch.float16
-        if device == torch.device("cpu"):
-            dtype = torch.float32
+        # モデルが変更された場合、または初回の場合のみ読み込み
+        if current_model_id != model_id or pipeline is None:
+            # 以前のパイプラインをクリア
+            if pipeline is not None:
+                del pipeline
+                torch.cuda.empty_cache() if torch.cuda.is_available() else None
+                if device == torch.device("mps"):
+                    # MPSのメモリもクリア
+                    torch.mps.empty_cache()
             
-        pipeline = StableDiffusionPipeline.from_pretrained(
-            model_id,
-            torch_dtype=dtype,
-            safety_checker=None,  # 高速化のためsafety checkerを無効化
-            requires_safety_checker=False,
-            use_safetensors=True
-        )
-        
-        pipeline = pipeline.to(device)
-        
-        # メモリ効率の改善
-        if device != torch.device("cpu"):
-            pipeline.enable_attention_slicing()
-            # xformersが利用可能な場合のみ有効化
-            try:
-                pipeline.enable_xformers_memory_efficient_attention()
-            except Exception as e:
-                logger.warning(f"xformers not available: {e}")
-                logger.info("Continuing without xformers optimization")
-        
-        logger.info("Pipeline initialized successfully")
+            # MPSでの精度問題を避けるためfloat32を使用
+            dtype = torch.float32 if device == torch.device("mps") else torch.float16
+            if device == torch.device("cpu"):
+                dtype = torch.float32
+                
+            pipeline = StableDiffusionPipeline.from_pretrained(
+                model_id,
+                torch_dtype=dtype,
+                safety_checker=None,  # 高速化のためsafety checkerを無効化
+                requires_safety_checker=False,
+                use_safetensors=True if "PublicPrompts" not in model_id else False
+            )
+            
+            pipeline = pipeline.to(device)
+            
+            # メモリ効率の改善
+            if device != torch.device("cpu"):
+                pipeline.enable_attention_slicing()
+                # xformersが利用可能な場合のみ有効化
+                try:
+                    pipeline.enable_xformers_memory_efficient_attention()
+                except Exception as e:
+                    logger.warning(f"xformers not available: {e}")
+                    logger.info("Continuing without xformers optimization")
+            
+            current_model_id = model_id
+            logger.info(f"Pipeline initialized successfully with model: {model_id}")
+        else:
+            logger.info(f"Using existing pipeline with model: {model_id}")
         return True
         
     except Exception as e:
@@ -384,6 +397,7 @@ def health_check():
         'status': 'healthy',
         'pipeline_loaded': pipeline is not None,
         'device': str(device) if device else None,
+        'current_model': current_model_id if current_model_id else 'none',
         'timestamp': datetime.now().isoformat()
     })
 
@@ -392,11 +406,16 @@ def generate_pixel_art():
     """
     ピクセルアート生成エンドポイント
     """
-    if pipeline is None:
-        return jsonify({'error': 'Pipeline not initialized'}), 500
-    
     try:
         data = request.get_json()
+        
+        # モデルIDを取得して必要に応じてパイプラインを初期化/切り替え
+        model_id = data.get('model_id', 'runwayml/stable-diffusion-v1-5')
+        if not initialize_pipeline(model_id):
+            return jsonify({'error': 'Failed to initialize model'}), 500
+        
+        if pipeline is None:
+            return jsonify({'error': 'Pipeline not initialized'}), 500
         
         # パラメータ取得
         prompt = data.get('prompt', '')
@@ -548,11 +567,16 @@ def generate_animation():
     """
     動くGIFを生成するエンドポイント
     """
-    if pipeline is None:
-        return jsonify({'error': 'Pipeline not initialized'}), 500
-    
     try:
         data = request.json
+        
+        # モデルIDを取得して必要に応じてパイプラインを初期化/切り替え
+        model_id = data.get('model_id', 'runwayml/stable-diffusion-v1-5')
+        if not initialize_pipeline(model_id):
+            return jsonify({'error': 'Failed to initialize model'}), 500
+        
+        if pipeline is None:
+            return jsonify({'error': 'Pipeline not initialized'}), 500
         
         # パラメータ取得
         prompt = data.get('prompt', 'pixel art character')
@@ -616,14 +640,29 @@ def generate_animation():
         # GIFに変換
         gif_buffer = io.BytesIO()
         
-        # imageioを使用してGIFを作成
+        # フレームをTwitter対応に最適化
+        optimized_frames = []
+        for frame in frames:
+            # RGBモードであることを確認
+            if frame.mode != 'RGB':
+                frame = frame.convert('RGB')
+            
+            # パレットを最適化（256色以下）
+            if palette_size <= 256:
+                frame = frame.quantize(colors=palette_size, method=Image.ADAPTIVE, dither=Image.NONE)
+                frame = frame.convert('RGB')
+            
+            optimized_frames.append(frame)
+        
+        # imageioを使用してGIFを作成（Twitter対応設定）
         duration = 1000 / fps  # ミリ秒単位
         imageio.mimsave(
             gif_buffer,
-            frames,
+            optimized_frames,
             format='GIF',
             duration=duration,
-            loop=0  # 無限ループ
+            loop=0,  # 無限ループ
+            subrectangles=False  # Twitter対応のため最適化を無効化
         )
         
         gif_buffer.seek(0)
@@ -736,8 +775,8 @@ def animate_existing_image():
 if __name__ == '__main__':
     logger.info("Starting Pixa - AI Pixel Art Generator Backend")
     
-    # パイプライン初期化
-    if initialize_pipeline():
+    # パイプライン初期化（デフォルトモデルで起動）
+    if initialize_pipeline("runwayml/stable-diffusion-v1-5"):
         logger.info("Server starting on http://localhost:5001")
         logger.info("Open your browser to http://localhost:5001 to use the application")
         app.run(host='0.0.0.0', port=5001, debug=False)

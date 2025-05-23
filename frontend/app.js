@@ -22,6 +22,8 @@ class PixelArtGenerator {
         this.elements = {
             prompt: document.getElementById('prompt'),
             negativePrompt: document.getElementById('negative-prompt'),
+            model: document.getElementById('model'),
+            modelDescription: document.getElementById('model-description'),
             preset: document.getElementById('preset'),
             width: document.getElementById('width'),
             height: document.getElementById('height'),
@@ -95,6 +97,13 @@ class PixelArtGenerator {
         
         this.elements.fps.addEventListener('input', (e) => {
             this.elements.fpsValue.textContent = e.target.value;
+        });
+        
+        // モデル変更
+        this.elements.model.addEventListener('change', (e) => {
+            this.updateModelDescription(e.target.value);
+            // モデルによって推奨設定を変更
+            this.updateModelDefaults(e.target.value);
         });
         
         // プリセット変更
@@ -245,6 +254,7 @@ class PixelArtGenerator {
         return {
             prompt: this.elements.prompt.value.trim(),
             negative_prompt: this.elements.negativePrompt.value.trim(),
+            model_id: this.elements.model.value,
             width: parseInt(this.elements.width.value),
             height: parseInt(this.elements.height.value),
             pixel_size: parseInt(this.elements.pixelSize.value),
@@ -580,6 +590,70 @@ class PixelArtGenerator {
         this.elements.prompt.focus();
         
         this.showStatus('新しい静止画を生成してください', 'info');
+    }
+    
+    updateModelDescription(modelId) {
+        const descriptions = {
+            'runwayml/stable-diffusion-v1-5': '汎用的な画像生成モデル。ピクセルアート以外も生成可能',
+            'PublicPrompts/All-In-One-Pixel-Model': '特殊形式のモデル（.ckpt）。読み込みに注意が必要',
+            'Linaqruf/anything-v3.0': 'アニメ調のキャラクター生成に強い。日本のゲーム風',
+            'nerijs/pixel-art-xl': '高解像度のモダンなピクセルアート。詳細な表現が可能'
+        };
+        
+        this.elements.modelDescription.textContent = descriptions[modelId] || '';
+    }
+    
+    updateModelDefaults(modelId) {
+        // モデルごとの推奨設定
+        const defaults = {
+            'PublicPrompts/All-In-One-Pixel-Model': {
+                pixelSize: 8,
+                paletteSize: 16,
+                steps: 25,
+                guidance: 7.5
+            },
+            'nerijs/pixel-art-xl': {
+                pixelSize: 4,
+                paletteSize: 32,
+                steps: 30,
+                guidance: 8.0,
+                width: 1024,
+                height: 1024
+            },
+            'Linaqruf/anything-v3.0': {
+                pixelSize: 6,
+                paletteSize: 24,
+                steps: 20,
+                guidance: 7.0
+            }
+        };
+        
+        const settings = defaults[modelId];
+        if (settings) {
+            // 設定を適用
+            if (settings.pixelSize) {
+                this.elements.pixelSize.value = settings.pixelSize;
+                this.elements.pixelSizeValue.textContent = settings.pixelSize;
+            }
+            if (settings.paletteSize) {
+                this.elements.paletteSize.value = settings.paletteSize;
+                this.elements.paletteSizeValue.textContent = settings.paletteSize;
+            }
+            if (settings.steps) {
+                this.elements.steps.value = settings.steps;
+                this.elements.stepsValue.textContent = settings.steps;
+            }
+            if (settings.guidance) {
+                this.elements.guidance.value = settings.guidance;
+                this.elements.guidanceValue.textContent = settings.guidance;
+            }
+            if (settings.width) {
+                this.elements.width.value = settings.width;
+            }
+            if (settings.height) {
+                this.elements.height.value = settings.height;
+            }
+        }
     }
     
     showStatus(message, type = 'info') {
