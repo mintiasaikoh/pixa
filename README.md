@@ -243,11 +243,16 @@ pixa/
 │   ├── index.html      # メインHTML
 │   ├── style.css       # スタイルシート
 │   └── app.js          # JavaScript
+├── apps/                # デスクトップ版アプリケーション
+│   ├── pygame_app*.py  # 各種pygameアプリ
+│   └── README.md       # アプリの説明
+├── scripts/             # 各種スクリプト（整理済み）
+│   ├── utils/          # ユーティリティスクリプト
+│   ├── tests/          # テストスクリプト
+│   ├── tools/          # 開発ツール
+│   └── README.md       # スクリプトの説明
 ├── models/              # ダウンロードされたモデル
 ├── configs/             # 設定ファイル
-├── pygame_app*.py       # デスクトップ版アプリ各種
-├── download_models.py   # モデルダウンローダー
-├── check_available_models.py # モデル確認ツール
 ├── start_server.sh      # Web版起動スクリプト
 ├── start_pygame.sh      # デスクトップ版起動スクリプト
 ├── stop_server.sh       # 停止スクリプト

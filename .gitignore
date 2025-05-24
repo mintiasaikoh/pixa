@@ -89,10 +89,10 @@ test_*.png
 test_*.gif
 temp_animation.gif
 
-# Development versions
-pygame_app_improved.py
-pygame_app_simple.py
-pygame_app_weblike.py
-
 # Clipboard test files
 clipboard-test.log
+
+# Generated sample images
+cat_computer_*.png
+cat_computer_*.gif
+pixel_art_style_test.png

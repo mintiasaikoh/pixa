@@ -31,7 +31,7 @@ sleep 5
 
 # pygame アプリケーション起動
 echo "pygame アプリケーションを起動中..."
-python pygame_app.py
+python apps/pygame_app_improved.py
 
 # 終了時にサーバーを停止
 echo "アプリケーション終了。サーバーを停止中..."
