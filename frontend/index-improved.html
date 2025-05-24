@@ -7,13 +7,13 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="style.css" rel="stylesheet">
-    <link href="layout-fix.css" rel="stylesheet">
+    <link href="layout-improved.css" rel="stylesheet">
 </head>
 <body class="bg-dark text-light">
     <div class="container-fluid h-100">
         <div class="row h-100">
-            <!-- プロンプト入力エリア -->
-            <div class="col-lg-4 col-md-5 bg-secondary p-4">
+            <!-- 左側サイドバー - すべてのコントロール -->
+            <div class="col-lg-4 col-md-5 sidebar bg-secondary p-4">
                 <h1 class="h3 mb-4">
                     <i class="fas fa-paint-brush me-2"></i>
                     Pixa - AI ピクセルアート ジェネレーター
@@ -73,7 +73,7 @@
                         <h2 class="accordion-header">
                             <button class="accordion-button collapsed bg-dark text-light" type="button" 
                                     data-bs-toggle="collapse" data-bs-target="#parametersCollapse">
-                                詳細パラメータ
+                                <i class="fas fa-sliders-h me-2"></i>詳細パラメータ
                             </button>
                         </h2>
                         <div id="parametersCollapse" class="accordion-collapse collapse" 
@@ -158,8 +158,8 @@
                     ピクセルアートを生成
                 </button>
                 
-                <!-- 4方向スプライトシート生成ボタン（特定モデル選択時のみ表示） -->
-                <button id="generate-sprite-sheet-btn" class="btn btn-success w-100 mb-3">
+                <!-- 4方向スプライトシート生成ボタン -->
+                <button id="generate-sprite-sheet-btn" class="btn btn-success w-100 mb-3" style="display: none;">
                     <i class="fas fa-th me-2"></i>
                     4方向スプライトシートを生成
                 </button>
@@ -173,8 +173,38 @@
                     <small id="progress-text" class="text-muted">生成中...</small>
                 </div>
                 
+                <hr class="my-4 border-secondary">
+                
+                <!-- 画像操作セクション（生成後に表示） -->
+                <div id="image-operations" class="image-operations-section mb-4" style="display: none;">
+                    <h5 class="mb-3">
+                        <i class="fas fa-tools me-2"></i>画像操作
+                    </h5>
+                    
+                    <div class="d-grid gap-2">
+                        <button id="download-btn" class="btn btn-success">
+                            <i class="fas fa-download me-2"></i>画像をダウンロード
+                        </button>
+                        
+                        <button id="copy-btn" class="btn btn-info">
+                            <i class="fas fa-copy me-2"></i>クリップボードにコピー
+                        </button>
+                        
+                        <button id="animate-btn" class="btn btn-warning">
+                            <i class="fas fa-play-circle me-2"></i>アニメーション化
+                        </button>
+                        
+                        <button id="download-gif-btn" class="btn btn-secondary" style="display: none;">
+                            <i class="fas fa-file-video me-2"></i>GIFとして保存
+                        </button>
+                    </div>
+                    
+                    <!-- 生成情報 -->
+                    <div id="generation-info" class="text-muted small mt-3 p-2 bg-dark rounded"></div>
+                </div>
+                
                 <!-- アニメーション設定 -->
-                <div class="accordion mb-3" id="animationAccordion">
+                <div class="accordion mb-3" id="animationAccordion" style="display: none;">
                     <div class="accordion-item">
                         <h2 class="accordion-header" id="animationHeading">
                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#animationCollapse" aria-expanded="false" aria-controls="animationCollapse">
@@ -183,19 +213,17 @@
                         </h2>
                         <div id="animationCollapse" class="accordion-collapse collapse" aria-labelledby="animationHeading" data-bs-parent="#animationAccordion">
                             <div class="accordion-body">
-                                <!-- 説明テキスト -->
+                                <!-- アニメーション設定内容 -->
                                 <div class="alert alert-info mb-3">
                                     <i class="fas fa-info-circle me-1"></i>
                                     静止画を生成後「アニメーション化」ボタンを押すと、その画像を動かせます
                                 </div>
                                 
-                                <!-- 現在の画像状態 -->
                                 <div id="animation-status" class="alert alert-secondary mb-3" style="display: none;">
                                     <i class="fas fa-image me-1"></i>
                                     <span id="animation-status-text">選択された画像をアニメーション化します</span>
                                 </div>
                                 
-                                <!-- アニメーションタイプ -->
                                 <div class="mb-3">
                                     <label for="animation-type" class="form-label">動きのタイプ</label>
                                     <select id="animation-type" class="form-select">
@@ -207,33 +235,27 @@
                                     </select>
                                 </div>
                                 
-                                <!-- フレーム数 -->
                                 <div class="mb-3">
                                     <label for="frame-count" class="form-label">
                                         動きの滑らかさ: <span id="frame-count-value">4</span>コマ
                                     </label>
                                     <input type="range" id="frame-count" class="form-range" 
                                            min="2" max="16" value="4">
-                                    <small class="text-muted">多いほど滑らか（ファイルサイズ大）</small>
                                 </div>
                                 
-                                <!-- FPS -->
                                 <div class="mb-3">
                                     <label for="fps" class="form-label">
                                         動きの速さ: <span id="fps-value">10</span>
                                     </label>
                                     <input type="range" id="fps" class="form-range" 
                                            min="5" max="30" value="10">
-                                    <small class="text-muted">5=ゆっくり ← → 30=速い</small>
                                 </div>
                                 
-                                <!-- アニメーション生成ボタン -->
                                 <button id="generate-animation-btn" class="btn btn-warning w-100 mb-2">
                                     <i class="fas fa-play-circle me-2"></i>
                                     アニメーションを生成
                                 </button>
                                 
-                                <!-- 新しい画像を生成ボタン -->
                                 <button id="new-image-btn" class="btn btn-secondary w-100" style="display: none;">
                                     <i class="fas fa-redo me-2"></i>
                                     新しい静止画を生成する
@@ -242,6 +264,8 @@
                         </div>
                     </div>
                 </div>
+                
+                <hr class="my-4 border-secondary">
                 
                 <!-- クイックプロンプト -->
                 <div class="mb-3">
@@ -267,41 +291,14 @@
                 </div>
             </div>
             
-            <!-- 生成結果表示エリア -->
-            <div class="col-lg-8 col-md-7 d-flex flex-column">
-                <div class="p-4 d-flex flex-column" style="height: 100%; overflow-y: auto;">
-                    <!-- 結果画像表示 -->
-                    <div id="result-container" class="d-flex align-items-center justify-content-center bg-black rounded border" style="min-height: 400px;">
-                        <div id="placeholder" class="text-center text-muted">
-                            <i class="fas fa-image fa-5x mb-3"></i>
-                            <p class="h5">プロンプトを入力して「生成」ボタンを押してください</p>
-                        </div>
-                        <img id="result-image" style="display: none;" class="img-fluid" alt="Generated pixel art">
+            <!-- 右側メインエリア - 画像表示専用 -->
+            <div class="col-lg-8 col-md-7 main-display-area">
+                <div id="result-container" class="image-display-container">
+                    <div id="placeholder" class="text-center text-muted">
+                        <i class="fas fa-image fa-5x mb-3"></i>
+                        <p class="h5">プロンプトを入力して「生成」ボタンを押してください</p>
                     </div>
-                    
-                    <!-- 画像操作ボタン -->
-                    <div id="image-controls" class="mt-3" style="display: none;">
-                        <div class="d-flex flex-wrap justify-content-between align-items-start">
-                            <div class="mb-2">
-                                <button id="download-btn" class="btn btn-success me-2 mb-2">
-                                    <i class="fas fa-download me-1"></i>ダウンロード
-                                </button>
-                                <button id="copy-btn" class="btn btn-info me-2 mb-2">
-                                    <i class="fas fa-copy me-1"></i>コピー
-                                </button>
-                                <button id="animate-btn" class="btn btn-primary me-2 mb-2">
-                                    <i class="fas fa-play-circle me-1"></i>アニメ化
-                                </button>
-                                <button id="download-gif-btn" class="btn btn-warning me-2 mb-2" style="display: none;">
-                                    <i class="fas fa-file-video me-1"></i>GIF保存
-                                </button>
-                            </div>
-                            <div id="generation-info" class="text-muted small text-end"></div>
-                        </div>
-                        <small class="text-muted d-block mt-1">
-                            💡 右クリック→「画像を保存」でも保存できます
-                        </small>
-                    </div>
+                    <img id="result-image" style="display: none;" class="generated-image" alt="Generated pixel art">
                 </div>
             </div>
         </div>

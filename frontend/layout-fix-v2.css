@@ -1,0 +1,46 @@
+/* 簡易修正版 - ボタンが確実に表示されるように */
+
+/* 画像表示エリアをコンパクトに */
+#result-container {
+    height: 60vh !important;
+    max-height: 60vh !important;
+    min-height: 300px !important;
+    overflow: auto;
+}
+
+/* ボタンエリアを常に表示 */
+#image-controls {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: #2d2d2d;
+    border-radius: 8px;
+}
+
+/* ボタンを確実に表示 */
+#image-controls button {
+    display: inline-block !important;
+    visibility: visible !important;
+}
+
+/* 生成後の表示制御をオーバーライド */
+#image-controls[style*="display: none"] {
+    display: block !important;
+}
+
+/* 全体のレイアウト調整 */
+.col-lg-8 .p-4 {
+    height: calc(100vh - 2rem);
+    overflow-y: auto;
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+    #result-container {
+        height: 50vh !important;
+        max-height: 50vh !important;
+    }
+}

@@ -1,0 +1,144 @@
+/* レイアウト修正用の追加CSS v3 - 画像操作ボタンを左側に配置 */
+
+/* 左側のサイドバーのスクロール設定 */
+.col-lg-4, .col-md-5 {
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* 画像表示エリアの全画面化 */
+#result-container {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    position: relative;
+}
+
+/* 画像の中央配置とサイズ調整 */
+#result-image {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+}
+
+/* 画像操作セクションのスタイル */
+#image-controls-section {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 0.5rem;
+    padding: 1rem;
+}
+
+#image-controls-section h5 {
+    color: #fff;
+}
+
+/* 生成情報のスタイル */
+#generation-info {
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    word-break: break-all;
+}
+
+/* ボタンのアイコン調整 */
+#image-controls-section .btn i {
+    width: 20px;
+    text-align: center;
+}
+
+/* 小さい画面用の調整 */
+@media (max-width: 1200px) {
+    #result-image {
+        max-width: 85%;
+        max-height: 85%;
+    }
+}
+
+/* タブレット用 */
+@media (max-width: 768px) {
+    /* サイドバーとメインエリアを縦積みに */
+    .col-lg-4, .col-md-5 {
+        height: auto;
+        max-height: 50vh;
+    }
+    
+    .col-lg-8, .col-md-7 {
+        height: 50vh;
+    }
+    
+    #result-container {
+        min-height: 300px;
+    }
+}
+
+/* スマートフォン用 */
+@media (max-width: 576px) {
+    /* ボタンテキストを短縮 */
+    #download-btn .fas {
+        margin-right: 0.25rem !important;
+    }
+    
+    #download-btn::after {
+        content: "保存";
+    }
+    
+    #download-btn {
+        font-size: 0.875rem;
+    }
+    
+    #copy-btn::after {
+        content: "コピー";
+    }
+    
+    #animate-btn::after {
+        content: "動画化";
+    }
+    
+    #download-gif-btn::after {
+        content: "GIF保存";
+    }
+    
+    /* オリジナルのテキストを非表示 */
+    #image-controls-section .btn span {
+        display: none;
+    }
+}
+
+/* アニメーション中の表示調整 */
+#result-image.animating {
+    cursor: wait;
+}
+
+/* プレースホルダーのアニメーション */
+#placeholder {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+/* スクロールバーのスタイル（Webkit系ブラウザ用） */
+.col-lg-4::-webkit-scrollbar,
+.col-md-5::-webkit-scrollbar {
+    width: 8px;
+}
+
+.col-lg-4::-webkit-scrollbar-track,
+.col-md-5::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.col-lg-4::-webkit-scrollbar-thumb,
+.col-md-5::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+}
+
+.col-lg-4::-webkit-scrollbar-thumb:hover,
+.col-md-5::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
