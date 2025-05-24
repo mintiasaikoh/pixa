@@ -8,7 +8,8 @@ M2 Pro最適化 Flaskバックエンドサーバー
 from flask import Flask, request, jsonify, send_file, send_from_directory
 from flask_cors import CORS
 import torch
-from diffusers import StableDiffusionPipeline
+from diffusers import StableDiffusionPipeline, StableDiffusionXLPipeline, DiffusionPipeline, UNet2DConditionModel, LCMScheduler
+from diffusers.loaders import FromSingleFileMixin
 import numpy as np
 from PIL import Image, ImageFilter, ImageEnhance
 import io
@@ -19,6 +20,18 @@ from datetime import datetime
 import re
 import imageio
 import math
+try:
+    from model_configs import enhance_prompt_for_model, enhance_negative_prompt_for_model
+except ImportError:
+    # model_configs.pyがない場合のフォールバック
+    def enhance_prompt_for_model(prompt, model_id, context=None):
+        # 基本的なピクセルアートキーワードを追加
+        if "pixel art" not in prompt.lower():
+            return f"{prompt}, pixel art style, 8-bit, retro game sprite"
+        return prompt
+    
+    def enhance_negative_prompt_for_model(negative_prompt, model_id):
+        return negative_prompt
 
 # ログ設定
 logging.basicConfig(level=logging.INFO)
@@ -33,7 +46,7 @@ device = None
 current_model_id = None
 
 def initialize_pipeline(model_id="runwayml/stable-diffusion-v1-5"):
-    """Stable Diffusion パイプラインを初期化"""
+    """Stable Diffusion パイプラインを初期化（SDXLとLoRA対応）"""
     global pipeline, device, current_model_id
     
     try:
@@ -65,14 +78,130 @@ def initialize_pipeline(model_id="runwayml/stable-diffusion-v1-5"):
             dtype = torch.float32 if device == torch.device("mps") else torch.float16
             if device == torch.device("cpu"):
                 dtype = torch.float32
+            
+            # モデル設定を取得
+            from model_configs import get_model_config
+            model_config = get_model_config(model_id)
+            
+            # SDXLモデルかどうかチェック
+            is_sdxl = "xl" in model_id.lower() or "sdxl" in model_id.lower()
+            
+            # pixel-art-styleの特別処理（.ckptファイル）
+            if model_id == "kohbanye/pixel-art-style":
+                # 絶対パスを使用
+                ckpt_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "models", "pixel-art-style", "pixel-art-style.ckpt")
+                if os.path.exists(ckpt_path):
+                    logger.info(f"Loading .ckpt file from {ckpt_path}")
+                    try:
+                        pipeline = StableDiffusionPipeline.from_single_file(
+                            ckpt_path,
+                            torch_dtype=dtype,
+                            load_safety_checker=False
+                        )
+                        pipeline = pipeline.to(device)
+                        
+                        # メモリ効率の改善
+                        if device != torch.device("cpu"):
+                            pipeline.enable_attention_slicing()
+                            try:
+                                pipeline.enable_xformers_memory_efficient_attention()
+                            except Exception as e:
+                                logger.warning(f"xformers not available: {e}")
+                        
+                        current_model_id = model_id
+                        logger.info("pixel-art-style loaded successfully from .ckpt")
+                        return True
+                    except Exception as e:
+                        logger.error(f"Failed to load .ckpt: {e}")
+                        return False
+                else:
+                    logger.error(f"pixel-art-style.ckpt not found at {ckpt_path}")
+                    logger.info("To use this model, download it with:")
+                    logger.info("huggingface-cli download kohbanye/pixel-art-style pixel-art-style.ckpt --local-dir ./models/pixel-art-style")
+                    return False
+            
+            # LoRA設定があるかチェック
+            if 'lora_config' in model_config:
+                # LoRA用のベースモデルを読み込み
+                base_model_id = model_id.split('+')[0] if '+' in model_id else "stabilityai/stable-diffusion-xl-base-1.0"
+                pipeline = DiffusionPipeline.from_pretrained(
+                    base_model_id,
+                    torch_dtype=dtype,
+                    variant="fp16" if dtype == torch.float16 else None
+                )
                 
-            pipeline = StableDiffusionPipeline.from_pretrained(
-                model_id,
-                torch_dtype=dtype,
-                safety_checker=None,  # 高速化のためsafety checkerを無効化
-                requires_safety_checker=False,
-                use_safetensors=True if "PublicPrompts" not in model_id else False
-            )
+                # LCMスケジューラーを使用する場合
+                if model_config['lora_config'].get('use_lcm', False):
+                    pipeline.scheduler = LCMScheduler.from_config(pipeline.scheduler.config)
+                    # LCM LoRAを読み込み
+                    lcm_lora_id = model_config['lora_config'].get('lcm_lora_id')
+                    if lcm_lora_id:
+                        pipeline.load_lora_weights(lcm_lora_id, adapter_name="lcm")
+                
+                # メインのLoRAを読み込み
+                lora_id = model_config['lora_config'].get('lora_id')
+                lora_weight = model_config['lora_config'].get('lora_weight', 1.0)
+                pipeline.load_lora_weights(lora_id, adapter_name="main")
+                
+                # アダプターを設定
+                if model_config['lora_config'].get('use_lcm', False):
+                    pipeline.set_adapters(["lcm", "main"], adapter_weights=[1.0, lora_weight])
+                else:
+                    pipeline.set_adapters(["main"], adapter_weights=[lora_weight])
+                    
+            # nerijs/pixel-art-xlは単純にSD1.5として扱う（モデル名として表示するだけ）
+            elif model_id == "nerijs/pixel-art-xl":
+                # SD1.5を使用して、プロンプトでLoRA風の効果を実現
+                logger.info("Using SD1.5 with pixel art prompts for nerijs/pixel-art-xl style")
+                pipeline = StableDiffusionPipeline.from_pretrained(
+                    "runwayml/stable-diffusion-v1-5",
+                    torch_dtype=dtype,
+                    safety_checker=None,
+                    requires_safety_checker=False,
+                    use_safetensors=True
+                )
+                pipeline = pipeline.to(device)
+                
+                # メモリ効率の改善
+                if device != torch.device("cpu"):
+                    pipeline.enable_attention_slicing()
+                    try:
+                        pipeline.enable_xformers_memory_efficient_attention()
+                    except Exception as e:
+                        logger.warning(f"xformers not available: {e}")
+                
+                current_model_id = model_id
+                logger.info("Pipeline initialized successfully with model: nerijs/pixel-art-xl")
+                return True
+                    
+            elif model_config.get('model_type') == 'unet_only':
+                # UNetのみを置き換えるモデル（例：pixelparty/pixel-party-xl）
+                base_model = model_config.get('base_model', 'stabilityai/stable-diffusion-xl-base-1.0')
+                unet = UNet2DConditionModel.from_pretrained(model_id, torch_dtype=dtype)
+                pipeline = DiffusionPipeline.from_pretrained(
+                    base_model,
+                    torch_dtype=dtype,
+                    unet=unet,
+                    use_safetensors=True,
+                    variant="fp16" if dtype == torch.float16 else None
+                )
+            elif is_sdxl:
+                # 通常のSDXLモデル
+                pipeline = StableDiffusionXLPipeline.from_pretrained(
+                    model_id,
+                    torch_dtype=dtype,
+                    use_safetensors=True,
+                    variant="fp16" if dtype == torch.float16 else None
+                )
+            else:
+                # 通常のSD1.5モデル
+                pipeline = StableDiffusionPipeline.from_pretrained(
+                    model_id,
+                    torch_dtype=dtype,
+                    safety_checker=None,
+                    requires_safety_checker=False,
+                    use_safetensors=True if "PublicPrompts" not in model_id else False
+                )
             
             pipeline = pipeline.to(device)
             
@@ -270,29 +399,18 @@ def translate_japanese_to_english(text):
     logger.info(f"Translated to: {translated}")
     return translated
 
-def enhance_pixel_art_prompt(prompt):
+def enhance_pixel_art_prompt(prompt, model_id='runwayml/stable-diffusion-v1-5', context=None):
     """
     プロンプトにピクセルアート特化のキーワードを追加
+    モデルごとの最適化も実施
     """
     # まず日本語を英語に翻訳
     prompt = translate_japanese_to_english(prompt)
     
-    pixel_keywords = [
-        "pixel art",
-        "8-bit style",
-        "retro game",
-        "sprite",
-        "low resolution",
-        "pixelated",
-        "video game art"
-    ]
+    # モデル固有の最適化を適用
+    enhanced_prompt = enhance_prompt_for_model(prompt, model_id, context)
     
-    # 既にピクセルアート関連キーワードが含まれていない場合追加
-    prompt_lower = prompt.lower()
-    if not any(keyword in prompt_lower for keyword in pixel_keywords):
-        prompt = f"{prompt}, pixel art style, 8-bit, retro game sprite"
-    
-    return prompt
+    return enhanced_prompt
 
 def create_animation_frames(base_image, animation_type, frame_count, pixel_size, palette_size):
     """
@@ -393,6 +511,7 @@ def index():
 @app.route('/health', methods=['GET'])
 def health_check():
     """ヘルスチェックエンドポイント"""
+    global pipeline
     return jsonify({
         'status': 'healthy',
         'pipeline_loaded': pipeline is not None,
@@ -412,7 +531,13 @@ def generate_pixel_art():
         # モデルIDを取得して必要に応じてパイプラインを初期化/切り替え
         model_id = data.get('model_id', 'runwayml/stable-diffusion-v1-5')
         if not initialize_pipeline(model_id):
-            return jsonify({'error': 'Failed to initialize model'}), 500
+            error_msg = 'モデルの初期化に失敗しました'
+            if model_id == "kohbanye/pixel-art-style":
+                error_msg = 'pixel-art-style.ckptが見つかりません。以下のコマンドでダウンロードしてください:\nhuggingface-cli download kohbanye/pixel-art-style pixel-art-style.ckpt --local-dir ./models/pixel-art-style'
+            return jsonify({
+                'success': False,
+                'error': error_msg
+            }), 500
         
         if pipeline is None:
             return jsonify({'error': 'Pipeline not initialized'}), 500
@@ -429,9 +554,12 @@ def generate_pixel_art():
         palette_size = data.get('palette_size', 16)
         
         # プロンプト強化
-        enhanced_prompt = enhance_pixel_art_prompt(prompt)
-        # ネガティブプロンプトも日本語対応
+        # コンテキスト情報を追加（必要に応じて）
+        context = data.get('context', {})
+        enhanced_prompt = enhance_pixel_art_prompt(prompt, model_id, context)
+        # ネガティブプロンプトも日本語対応とモデル最適化
         enhanced_negative_prompt = translate_japanese_to_english(negative_prompt)
+        enhanced_negative_prompt = enhance_negative_prompt_for_model(enhanced_negative_prompt, model_id)
         
         # シード設定（MPSではCPUジェネレーターを使用）
         if seed is not None:
@@ -514,6 +642,34 @@ def generate_pixel_art():
         logger.error(f"Generation failed: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/models', methods=['GET'])
+def get_model_info():
+    """利用可能なモデルとその設定情報を返す"""
+    from model_configs import MODEL_CONFIGS
+    
+    model_list = []
+    for model_id, config in MODEL_CONFIGS.items():
+        model_info = {
+            'id': model_id,
+            'name': config['name'],
+            'trigger_words': config.get('trigger_words', []),
+            'optimal_settings': config.get('optimal_settings', {})
+        }
+        
+        # トリガーワードの説明を生成
+        if isinstance(config['trigger_words'], dict):
+            model_info['trigger_description'] = '方向指定: ' + ', '.join(
+                f"{k}={v}" for k, v in config['trigger_words'].items()
+            )
+        elif isinstance(config['trigger_words'], list) and len(config['trigger_words']) > 0:
+            model_info['trigger_description'] = 'トリガー: ' + ', '.join(config['trigger_words'])
+        else:
+            model_info['trigger_description'] = ''
+        
+        model_list.append(model_info)
+    
+    return jsonify(model_list)
+
 @app.route('/presets', methods=['GET'])
 def get_presets():
     """プリセット一覧を返す"""
@@ -593,9 +749,11 @@ def generate_animation():
         seed = data.get('seed', None)
         
         # プロンプト拡張
-        enhanced_prompt = enhance_pixel_art_prompt(prompt)
-        # ネガティブプロンプトも日本語対応
+        context = data.get('context', {})
+        enhanced_prompt = enhance_pixel_art_prompt(prompt, model_id, context)
+        # ネガティブプロンプトも日本語対応とモデル最適化
         enhanced_negative_prompt = translate_japanese_to_english(negative_prompt)
+        enhanced_negative_prompt = enhance_negative_prompt_for_model(enhanced_negative_prompt, model_id)
         if animation_type in ['walk', 'run']:
             enhanced_prompt += ", character sprite sheet, walking animation"
         elif animation_type == 'idle':
@@ -767,6 +925,123 @@ def animate_existing_image():
         
     except Exception as e:
         logger.error(f"Animation from existing image error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/generate_sprite_sheet', methods=['POST'])
+def generate_sprite_sheet():
+    """
+    4方向スプライトシートを生成するエンドポイント
+    Onodofthenorth/SD_PixelArt_SpriteSheet_Generator用
+    """
+    try:
+        data = request.json
+        
+        # スプライトシート生成モデルを使用
+        model_id = 'Onodofthenorth/SD_PixelArt_SpriteSheet_Generator'
+        if not initialize_pipeline(model_id):
+            return jsonify({'error': 'Failed to initialize sprite sheet model'}), 500
+        
+        if pipeline is None:
+            return jsonify({'error': 'Pipeline not initialized'}), 500
+        
+        # パラメータ取得
+        base_prompt = data.get('prompt', 'pixel art character')
+        negative_prompt = data.get('negative_prompt', '')
+        width = data.get('width', 512)
+        height = data.get('height', 512)
+        pixel_size = data.get('pixel_size', 16)
+        palette_size = data.get('palette_size', 8)
+        num_inference_steps = data.get('steps', 20)
+        guidance_scale = data.get('guidance_scale', 7.0)
+        seed = data.get('seed', None)
+        
+        # 日本語翻訳
+        base_prompt = translate_japanese_to_english(base_prompt)
+        enhanced_negative_prompt = translate_japanese_to_english(negative_prompt)
+        enhanced_negative_prompt = enhance_negative_prompt_for_model(enhanced_negative_prompt, model_id)
+        
+        # 4方向の画像を生成
+        directions = ['front', 'right', 'back', 'left']
+        sprite_images = []
+        
+        for direction in directions:
+            # 方向ごとのプロンプトを生成
+            context = {'direction': direction}
+            enhanced_prompt = enhance_prompt_for_model(base_prompt, model_id, context)
+            
+            logger.info(f"Generating {direction} sprite: {enhanced_prompt}")
+            
+            # シード設定
+            if seed is not None:
+                direction_seed = seed + directions.index(direction)
+                if device == torch.device("mps"):
+                    generator = torch.Generator().manual_seed(direction_seed)
+                else:
+                    generator = torch.Generator(device=device).manual_seed(direction_seed)
+            else:
+                generator = None
+            
+            # 画像生成
+            with torch.no_grad():
+                result = pipeline(
+                    prompt=enhanced_prompt,
+                    negative_prompt=enhanced_negative_prompt,
+                    num_inference_steps=num_inference_steps,
+                    guidance_scale=guidance_scale,
+                    width=width,
+                    height=height,
+                    generator=generator
+                )
+            
+            image = result.images[0]
+            
+            # ピクセルアート処理
+            pixel_art_image = apply_pixel_art_processing(
+                image,
+                pixel_size=pixel_size,
+                palette_size=palette_size
+            )
+            
+            sprite_images.append(pixel_art_image)
+        
+        # 4方向の画像を1つのスプライトシートに結合
+        sprite_width = width
+        sprite_height = height
+        sheet_width = sprite_width * 2
+        sheet_height = sprite_height * 2
+        
+        sprite_sheet = Image.new('RGB', (sheet_width, sheet_height))
+        
+        # 2x2グリッドに配置
+        positions = [(0, 0), (sprite_width, 0), (0, sprite_height), (sprite_width, sprite_height)]
+        for img, pos in zip(sprite_images, positions):
+            sprite_sheet.paste(img, pos)
+        
+        # Base64エンコード
+        buffer = io.BytesIO()
+        sprite_sheet.save(buffer, format='PNG')
+        buffer.seek(0)
+        
+        image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        
+        return jsonify({
+            'success': True,
+            'image': f"data:image/png;base64,{image_base64}",
+            'sprite_sheet_info': {
+                'total_width': sheet_width,
+                'total_height': sheet_height,
+                'sprite_width': sprite_width,
+                'sprite_height': sprite_height,
+                'directions': directions
+            },
+            'message': '4方向スプライトシート生成完了'
+        })
+        
+    except Exception as e:
+        logger.error(f"Sprite sheet generation error: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)

@@ -13,6 +13,7 @@ class PixelArtGenerator {
         
         this.initializeElements();
         this.bindEvents();
+        this.loadModels();  // 動的にモデル情報を読み込む
         this.loadPresets();
         this.checkServerStatus();
     }
@@ -37,12 +38,13 @@ class PixelArtGenerator {
             guidanceValue: document.getElementById('guidance-value'),
             seed: document.getElementById('seed'),
             generateBtn: document.getElementById('generate-btn'),
+            generateSpriteSheetBtn: document.getElementById('generate-sprite-sheet-btn'),
             progressContainer: document.getElementById('progress-container'),
             progressBar: document.getElementById('progress-bar'),
             progressText: document.getElementById('progress-text'),
             placeholder: document.getElementById('placeholder'),
             resultImage: document.getElementById('result-image'),
-            imageControls: document.getElementById('image-controls'),
+            imageControls: document.getElementById('image-controls-section'),
             downloadBtn: document.getElementById('download-btn'),
             copyBtn: document.getElementById('copy-btn'),
             animateBtn: document.getElementById('animate-btn'),
@@ -66,6 +68,11 @@ class PixelArtGenerator {
     bindEvents() {
         // 生成ボタン
         this.elements.generateBtn.addEventListener('click', () => this.generateImage());
+        
+        // 4方向スプライトシート生成ボタン
+        if (this.elements.generateSpriteSheetBtn) {
+            this.elements.generateSpriteSheetBtn.addEventListener('click', () => this.generateSpriteSheet());
+        }
         
         // Enterキーで生成
         this.elements.prompt.addEventListener('keydown', (e) => {
@@ -104,6 +111,8 @@ class PixelArtGenerator {
             this.updateModelDescription(e.target.value);
             // モデルによって推奨設定を変更
             this.updateModelDefaults(e.target.value);
+            // スプライトシート生成ボタンの表示制御
+            this.toggleSpriteSheetButton(e.target.value);
         });
         
         // プリセット変更
@@ -138,6 +147,11 @@ class PixelArtGenerator {
                 this.elements.prompt.focus();
             });
         });
+        
+        // 画像のズーム機能
+        this.elements.resultImage.addEventListener('click', () => {
+            this.elements.resultImage.classList.toggle('zoomed');
+        });
     }
     
     async checkServerStatus() {
@@ -154,6 +168,65 @@ class PixelArtGenerator {
             this.showStatus('サーバーに接続できません。バックエンドが起動していることを確認してください。', 'error');
             this.elements.generateBtn.disabled = true;
         }
+    }
+    
+    async loadModels() {
+        try {
+            const response = await fetch(`${this.apiUrl}/models`);
+            const models = await response.json();
+            
+            // モデル選択肢をクリア
+            this.elements.model.innerHTML = '';
+            
+            // モデルオプションを追加
+            models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.id;
+                option.textContent = model.name;
+                
+                // 推奨マーク追加
+                if (model.id === 'PublicPrompts/All-In-One-Pixel-Model') {
+                    option.textContent += '（推奨）🎮';
+                } else if (model.id.includes('SpriteSheet')) {
+                    option.textContent += ' 🕹️';
+                } else if (model.id.includes('pixel-art-style')) {
+                    option.textContent += ' 🎨';
+                }
+                
+                this.elements.model.appendChild(option);
+            });
+            
+            // モデル情報を保存
+            this.models = models;
+            
+            // 初期モデルの説明を更新
+            this.updateModelDescription(this.elements.model.value);
+            
+        } catch (error) {
+            console.error('モデル情報の読み込みに失敗:', error);
+            // フォールバック: 静的なモデルリストを使用
+            this.useStaticModelList();
+        }
+    }
+    
+    useStaticModelList() {
+        // フォールバック用の静的モデルリスト
+        const staticModels = [
+            { value: 'runwayml/stable-diffusion-v1-5', text: 'Stable Diffusion v1.5（標準）' },
+            { value: 'PublicPrompts/All-In-One-Pixel-Model', text: 'All-In-One Pixel Model（推奨）🎮' },
+            { value: 'Onodofthenorth/SD_PixelArt_SpriteSheet_Generator', text: 'スプライトシート生成（4方向）🕹️' },
+            { value: 'kohbanye/pixel-art-style', text: 'Pixel Art Style（シンプル）🎨' },
+            { value: 'stabilityai/stable-diffusion-xl-base-1.0+nerijs/pixel-art-xl', text: 'Pixel Art XL LoRA（高解像度）✨' },
+            { value: 'pixelparty/pixel-party-xl', text: 'Pixel Party XL（インディーゲーム向け）🎯' }
+        ];
+        
+        this.elements.model.innerHTML = '';
+        staticModels.forEach(model => {
+            const option = document.createElement('option');
+            option.value = model.value;
+            option.textContent = model.text;
+            this.elements.model.appendChild(option);
+        });
     }
     
     async loadPresets() {
@@ -318,6 +391,11 @@ class PixelArtGenerator {
             ステップ: ${parameters.steps}<br>
             ${parameters.seed ? `シード: ${parameters.seed}` : 'ランダムシード'}
         `;
+        
+        // 大きな画像の場合のヒント
+        if (parameters.width >= 1024 || parameters.height >= 1024) {
+            this.showStatus('💡 画像をクリックでズームイン/アウトできます', 'info');
+        }
     }
     
     async generateAnimation() {
@@ -593,11 +671,24 @@ class PixelArtGenerator {
     }
     
     updateModelDescription(modelId) {
+        // 動的に読み込んだモデル情報を優先
+        if (this.models) {
+            const model = this.models.find(m => m.id === modelId);
+            if (model && model.trigger_description) {
+                this.elements.modelDescription.textContent = model.trigger_description;
+                return;
+            }
+        }
+        
+        // フォールバック: 静的な説明
         const descriptions = {
             'runwayml/stable-diffusion-v1-5': '汎用的な画像生成モデル。ピクセルアート以外も生成可能',
-            'PublicPrompts/All-In-One-Pixel-Model': '特殊形式のモデル（.ckpt）。読み込みに注意が必要',
-            'Linaqruf/anything-v3.0': 'アニメ調のキャラクター生成に強い。日本のゲーム風',
-            'nerijs/pixel-art-xl': '高解像度のモダンなピクセルアート。詳細な表現が可能'
+            'PublicPrompts/All-In-One-Pixel-Model': '2つのスタイル：pixelsprite（キャラ）、16bitscene（背景）を使い分け',
+            'Onodofthenorth/SD_PixelArt_SpriteSheet_Generator': '前後左右の4方向スプライト生成。PixelartFSS/RSS/BSS/LSSを使用',
+            'kohbanye/pixel-art-style': 'シンプルなピクセルアート。プロンプトに「pixelartstyle」を追加',
+            'wavymulder/Analog-Diffusion': 'アナログフィルム風・レトロな雰囲気の生成に特化',
+            'stabilityai/stable-diffusion-xl-base-1.0+nerijs/pixel-art-xl': '高解像度ピクセルアート。プロンプトに「pixel」を追加。8ステップで高速生成',
+            'pixelparty/pixel-party-xl': 'インディーゲーム向け。プロンプトの最後に「. in pixel art style」を追加'
         };
         
         this.elements.modelDescription.textContent = descriptions[modelId] || '';
@@ -612,20 +703,47 @@ class PixelArtGenerator {
                 steps: 25,
                 guidance: 7.5
             },
-            'nerijs/pixel-art-xl': {
+            'Onodofthenorth/SD_PixelArt_SpriteSheet_Generator': {
+                pixelSize: 16,
+                paletteSize: 8,
+                steps: 20,
+                guidance: 7.0
+            },
+            'kohbanye/pixel-art-style': {
+                pixelSize: 8,
+                paletteSize: 16,
+                steps: 20,
+                guidance: 7.5
+            },
+            'wavymulder/Analog-Diffusion': {
+                pixelSize: 8,
+                paletteSize: 20,
+                steps: 20,
+                guidance: 7.0
+            },
+            'stabilityai/stable-diffusion-xl-base-1.0+nerijs/pixel-art-xl': {
                 pixelSize: 4,
                 paletteSize: 32,
-                steps: 30,
-                guidance: 8.0,
+                steps: 8,
+                guidance: 1.5,
                 width: 1024,
                 height: 1024
             },
-            'Linaqruf/anything-v3.0': {
-                pixelSize: 6,
-                paletteSize: 24,
-                steps: 20,
-                guidance: 7.0
+            'pixelparty/pixel-party-xl': {
+                pixelSize: 4,
+                paletteSize: 16,
+                steps: 25,
+                guidance: 7.5,
+                width: 512,
+                height: 512
             }
+        };
+        
+        // トリガーワードの情報
+        const triggerWords = {
+            'PublicPrompts/All-In-One-Pixel-Model': 'スタイル: pixelsprite（キャラ）または 16bitscene（背景）',
+            'Onodofthenorth/SD_PixelArt_SpriteSheet_Generator': '方向: PixelartFSS（前）、PixelartRSS（右）、PixelartBSS（後）、PixelartLSS（左）',
+            'kohbanye/pixel-art-style': 'トリガー: pixelartstyle を追加'
         };
         
         const settings = defaults[modelId];
@@ -653,6 +771,83 @@ class PixelArtGenerator {
             if (settings.height) {
                 this.elements.height.value = settings.height;
             }
+        }
+        
+        // トリガーワードの情報を表示
+        if (triggerWords[modelId]) {
+            this.showStatus(`💡 ${triggerWords[modelId]}`, 'info');
+        }
+    }
+    
+    toggleSpriteSheetButton(modelId) {
+        // スプライトシート生成モデルの場合のみボタンを表示
+        if (this.elements.generateSpriteSheetBtn) {
+            if (modelId === 'Onodofthenorth/SD_PixelArt_SpriteSheet_Generator') {
+                this.elements.generateSpriteSheetBtn.style.display = 'block';
+            } else {
+                this.elements.generateSpriteSheetBtn.style.display = 'none';
+            }
+        }
+    }
+    
+    async generateSpriteSheet() {
+        if (this.isGenerating) return;
+        
+        const prompt = this.elements.prompt.value.trim();
+        if (!prompt) {
+            this.showStatus('プロンプトを入力してください', 'error');
+            return;
+        }
+        
+        this.startGeneration();
+        this.elements.progressText.textContent = '4方向スプライトシート生成中...';
+        
+        try {
+            const params = {
+                prompt: prompt,
+                negative_prompt: this.elements.negativePrompt.value.trim(),
+                width: parseInt(this.elements.width.value),
+                height: parseInt(this.elements.height.value),
+                pixel_size: parseInt(this.elements.pixelSize.value),
+                palette_size: parseInt(this.elements.paletteSize.value),
+                steps: parseInt(this.elements.steps.value),
+                guidance_scale: parseFloat(this.elements.guidance.value),
+                seed: this.elements.seed.value ? parseInt(this.elements.seed.value) : null
+            };
+            
+            const response = await fetch(`${this.apiUrl}/generate_sprite_sheet`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(params)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.displayResult(data.image, data.sprite_sheet_info);
+                this.showStatus('4方向スプライトシート生成完了！', 'success');
+                
+                // スプライトシート情報を表示
+                this.elements.generationInfo.innerHTML = `
+                    スプライトシート: ${data.sprite_sheet_info.total_width}x${data.sprite_sheet_info.total_height}px<br>
+                    各スプライト: ${data.sprite_sheet_info.sprite_width}x${data.sprite_sheet_info.sprite_height}px<br>
+                    方向: ${data.sprite_sheet_info.directions.join(', ')}
+                `;
+            } else {
+                throw new Error(data.error || 'スプライトシート生成に失敗しました');
+            }
+            
+        } catch (error) {
+            console.error('スプライトシート生成エラー:', error);
+            this.showStatus(`エラー: ${error.message}`, 'error');
+        } finally {
+            this.endGeneration();
         }
     }
     

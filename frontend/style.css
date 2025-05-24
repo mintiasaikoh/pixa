@@ -13,7 +13,7 @@ body {
     background-color: var(--dark-bg) !important;
     height: 100vh;
     margin: 0;
-    overflow: hidden;
+    overflow-y: auto;  /* スクロール可能に変更 */
 }
 
 .bg-secondary {
@@ -176,8 +176,11 @@ body {
 /* 結果表示エリア */
 #result-container {
     min-height: 400px;
+    max-height: calc(100vh - 200px);  /* 画面高さから余白を引いた高さに制限 */
     border: 2px dashed #555;
     transition: border-color 0.3s ease;
+    overflow: auto;  /* コンテンツが大きい場合はスクロール可能 */
+    position: relative;
 }
 
 #result-container:hover {
@@ -192,6 +195,11 @@ body {
     image-rendering: -webkit-crisp-edges;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
+    max-width: 90%;  /* 少し余白を持たせる */
+    max-height: 90%;  /* 少し余白を持たせる */
+    width: auto;
+    height: auto;
+    object-fit: contain;  /* アスペクト比を保持 */
 }
 
 /* プレースホルダー */
@@ -215,6 +223,41 @@ body {
     font-family: 'Courier New', monospace;
     font-size: 0.75rem;
     max-width: 300px;
+}
+
+/* 画像操作コントロール */
+#image-controls {
+    position: relative;  /* stickyから変更 */
+    bottom: auto;
+    background-color: var(--dark-bg);
+    padding: 1rem 0;
+    z-index: 10;
+}
+
+/* メインコンテナの高さ調整 */
+.container-fluid {
+    height: 100vh;
+    overflow: hidden;
+}
+
+.container-fluid > .row {
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* 左サイドバー（プロンプト入力エリア） */
+.col-lg-4, .col-md-5 {
+    overflow-y: auto;
+    max-height: 100vh;
+}
+
+/* 右側（画像表示エリア） */
+.col-lg-8, .col-md-7 {
+    overflow-y: auto;
+    max-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 2rem;  /* ボタン用の余白を追加 */
 }
 
 /* ローディングアニメーション */
@@ -252,6 +295,31 @@ body {
 /* ピクセルアート風フォント効果 */
 h1, h2, h3 {
     text-shadow: 1px 1px 0px #333;
+}
+
+/* 画像のズーム機能 */
+#result-image {
+    cursor: zoom-in;
+    transition: transform 0.3s ease;
+}
+
+#result-image.zoomed {
+    cursor: zoom-out;
+    transform: scale(1.5);
+    max-width: none;
+    max-height: none;
+}
+
+/* モバイルビューの改善 */
+@media (max-width: 992px) {
+    .col-lg-4, .col-lg-8 {
+        max-height: none;
+        overflow-y: visible;
+    }
+    
+    #result-container {
+        max-height: 60vh;
+    }
 }
 
 /* スクロールバーカスタマイズ */

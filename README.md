@@ -49,6 +49,26 @@ source venv/bin/activate
 pip install -r backend/requirements.txt
 ```
 
+### 3. モデルのダウンロード（NEW!）
+
+必要なAIモデルを事前にダウンロードできます：
+
+```bash
+# モデルダウンローダーを実行
+./download_models.sh
+
+# または手動で実行
+source venv/bin/activate
+python download_models.py
+```
+
+ダウンロードオプション：
+- **必須モデルのみ（約6GB）**: SD1.5 + All-In-One Pixel Model
+- **推奨モデル（約7GB）**: 上記 + SDXL + LoRA
+- **全モデル（約25GB）**: すべての利用可能なモデル
+
+> 💡 ヒント: 初回起動時に自動的にダウンロードされますが、事前ダウンロードで待ち時間を短縮できます。
+
 ### 3. アプリケーション起動
 
 #### Web版（ブラウザー）
