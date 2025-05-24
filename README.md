@@ -20,8 +20,8 @@ M2 Pro Mac向けに最適化されたStable Diffusionベースのピクセルア
 - **🇯🇵 日本語プロンプト対応**: 自動翻訳で日本語入力をサポート
 - **🎯 複数のスタイルプリセット**: 8-bit、16-bit、ゲームボーイ風、ミニマル、高精細
 - **🎬 アニメーション生成**: 静止画から動くGIFアニメーションを作成
-- **🇯🇵 ネガティブプロンプト日本語対応**: 避けたい要素も日本語で指定可能
-- **🤖 AIモデル切り替え**: 複数のStable Diffusionモデルから選択可能
+- **🕹️ 4方向スプライトシート生成**: ゲーム開発向けの前後左右スプライト自動生成
+- **🤖 複数のピクセルアート特化AIモデル**: 用途に応じて選択可能
 - **📊 詳細パラメーター説明**: 各設定項目にわかりやすい説明文を表示
 
 ## 🚀 クイックスタート
@@ -32,7 +32,7 @@ M2 Pro Mac向けに最適化されたStable Diffusionベースのピクセルア
 
 - Python 3.8以上
 - pip (Python package manager)
-- 十分な空き容量（モデルファイル用に約5GB）
+- 十分な空き容量（モデルファイル用に約10GB）
 
 ### 2. インストール
 
@@ -49,7 +49,7 @@ source venv/bin/activate
 pip install -r backend/requirements.txt
 ```
 
-### 3. モデルのダウンロード（NEW!）
+### 3. モデルのダウンロード
 
 必要なAIモデルを事前にダウンロードできます：
 
@@ -63,13 +63,13 @@ python download_models.py
 ```
 
 ダウンロードオプション：
-- **必須モデルのみ（約6GB）**: SD1.5 + All-In-One Pixel Model
-- **推奨モデル（約7GB）**: 上記 + SDXL + LoRA
-- **全モデル（約25GB）**: すべての利用可能なモデル
+- **基本モデル（約4GB）**: SD1.5 + All-In-One Pixel Model
+- **推奨モデル（約8GB）**: 上記 + スプライトシート生成モデル
+- **全モデル（約15GB）**: すべての利用可能なモデル
 
 > 💡 ヒント: 初回起動時に自動的にダウンロードされますが、事前ダウンロードで待ち時間を短縮できます。
 
-### 3. アプリケーション起動
+### 4. アプリケーション起動
 
 #### Web版（ブラウザー）
 ```bash
@@ -83,13 +83,13 @@ python download_models.py
 ./start_pygame.sh
 ```
 
-初回起動時は、Stable Diffusionモデルのダウンロードが自動で行われます（約5GB、数分かかります）。
+初回起動時は、Stable Diffusionモデルのダウンロードが自動で行われます（約4GB、数分かかります）。
 
-### 4. アプリケーション使用
+### 5. アプリケーション使用
 
 #### Web版
 1. ブラウザで http://localhost:5001 にアクセス
-2. プロンプトを入力（例：「可愛い猫の戦士」または「a cute cat warrior in a forest」）
+2. プロンプトを入力（例：「可愛い猫の戦士」または「a cute cat warrior」）
 3. 必要に応じてパラメータを調整
 4. 「ピクセルアートを生成」ボタンをクリック
 5. 生成された画像をダウンロード
@@ -101,15 +101,13 @@ python download_models.py
 4. 「ピクセルアートを生成」ボタンをクリック（またはCtrl+Enter）
 5. 「保存」ボタンで画像を保存（またはCtrl+S）
 
-### 5. アプリケーション停止
+### 6. アプリケーション停止
 
 ```bash
 # Web版停止スクリプトを実行
 ./stop_server.sh
 
 # デスクトップ版: ウィンドウを閉じるか、ターミナルで Ctrl+C
-
-# または起動中のターミナルで Ctrl+C
 ```
 
 ## 🎨 使用方法
@@ -143,6 +141,54 @@ python download_models.py
    - **ステップ数**: 生成品質（多いほど高品質だが時間がかかる）
    - **ガイダンス**: プロンプトへの忠実度
 
+### 🕹️ 4方向スプライトシート生成（NEW!）
+
+ゲーム開発向けに、キャラクターの前後左右4方向のスプライトを自動生成できます。
+
+**使用方法:**
+1. キャラクターの説明を入力（例: `warrior character`, `cute cat sprite`）
+2. 「4方向スプライトシートを生成」ボタンをクリック
+3. 2×2のグリッドで4方向のスプライトが生成されます
+
+**生成される方向:**
+- 左上: 前向き（Front）
+- 右上: 右向き（Right）
+- 左下: 後向き（Back）
+- 右下: 左向き（Left）
+
+**推奨設定:**
+- サイズ: 512×512px
+- ピクセルサイズ: 16
+- カラーパレット: 8色
+
+### 🤖 AIモデル選択
+
+Pixaは複数のピクセルアート特化モデルから選択できます：
+
+1. **All-In-One Pixel Model（推奨）🎮**
+   - 最も汎用性の高いピクセルアートモデル
+   - スタイル: `pixelsprite`（キャラ）、`16bitscene`（背景）
+   - 高品質で安定した結果
+
+2. **スプライトシート生成（4方向）🕹️**
+   - ゲーム開発向け4方向スプライト自動生成
+   - 前後左右の一貫性のあるキャラクタースプライト
+   - RPGやアクションゲーム開発に最適
+
+3. **Pixel Art Style（シンプル）🎨**
+   - ⚠️ 現在M2 Proで不具合あり（代替モデル推奨）
+   - シンプルなピクセルアートスタイル
+   - トリガー: `pixelartstyle`
+
+4. **Pixel Art XL LoRA（高速）✨**
+   - 高速生成（8ステップ）
+   - 高解像度対応
+   - トリガー: `pixel`を追加
+
+5. **Stable Diffusion v1.5（標準）**
+   - 汎用モデル
+   - プロンプトに`pixel art style`を追加して使用
+
 ### 🇯🇵 日本語プロンプト機能
 
 Pixaは日本語プロンプトを自動的に英語に翻訳してStable Diffusionに送信します：
@@ -157,32 +203,9 @@ Pixaは日本語プロンプトを自動的に英語に翻訳してStable Diffus
 - 「変な手、余分な指」 → 「weird hands, extra fingers」
 - 「暗い、ノイズ」 → 「dark, noise」
 
-**対応語彙:**
-- 動物: 猫、犬、ドラゴン、馬、うさぎ等
-- キャラクター: 騎士、魔法使い、忍者、侍等
-- 場所: 城、森、海、山、空等
-- 形容詞: 可愛い、美しい、強い、魔法の等
-- ネガティブ用語: ぼやけた、低品質、変な、歪んだ、崩れた、汚い、醜い等
-- アニメーション: 歩く、走る、ジャンプ、待機、アイドル、回転、光る等
-
-### 高度な機能
-
-- **ネガティブプロンプト**: 避けたい要素を指定（日本語対応）
-  - 例: 「ぼやけた、低品質、変な手」
-- **シード値**: 同じ結果を再現するための値
-- **画像サイズ**: 256px〜768pxまで選択可能
-- **クイックプロンプト**: よく使用されるプロンプトのワンクリック入力
-
 ### 🎬 アニメーション生成機能
 
-Pixaは静止画をアニメーション化できる機能を搭載しています。
-
-**新しいワークフロー:**
-1. まず通常通り静止画を生成
-2. 気に入った画像の「アニメーション化」ボタンをクリック
-3. アニメーション設定を調整
-4. 何度でも設定を変えてアニメーション生成可能
-5. 新しい静止画が欲しい場合は「新しい静止画を生成する」ボタン
+静止画をアニメーション化できる機能を搭載しています。
 
 **動きのタイプ:**
 - **ゆらゆら（待機モーション）**: キャラクターの上下動
@@ -191,56 +214,12 @@ Pixaは静止画をアニメーション化できる機能を搭載していま�
 - **キラキラ（光る効果）**: 明るさが変化する発光エフェクト
 - **くるくる（回転）**: 360度回転
 
-**アニメーションパラメータ:**
-- **動きの滑らかさ**: 2〜16コマ（フレーム数）
-- **動きの速さ**: 5（ゆっくり）〜30（速い）
-
 **使用方法:**
 1. 静止画を生成
 2. 「アニメーション化」ボタンをクリック
 3. 動きのタイプを選択
 4. 滑らかさと速さを調整
 5. 「アニメーションを生成」ボタンをクリック
-6. 生成されたGIFは「GIFダウンロード」ボタンで保存可能
-
-### 🤖 AIモデル切り替え機能
-
-Pixaは複数のStable Diffusionモデルから選択して生成できます。モデルごとに異なる特徴があり、用途に応じて使い分けることができます。
-
-**利用可能なモデル:**
-
-1. **Stable Diffusion v1.5（標準）**
-   - 汎用的な画像生成モデル
-   - バランスの取れた生成品質
-   - ピクセルアート以外も生成可能
-
-2. **Anything v3.0（アニメ調）**
-   - アニメ・マンガ風のキャラクター生成に特化
-   - 日本のゲーム風のビジュアル
-   - かわいいキャラクター生成に最適
-
-3. **Pixel Art XL（高解像度）**  
-   - 高解像度（1024×1024）のピクセルアート生成
-   - より詳細で現代的なピクセルアート
-   - 8GB以上のVRAM推奨
-
-**モデル切り替え方法:**
-1. UIの「AIモデル」ドロップダウンから選択
-2. 選択すると自動的に推奨設定が適用される
-3. 初回選択時はモデルのダウンロードが行われる（数GB）
-
-**モデル別推奨設定（自動適用）:**
-- **Anything v3.0**: ピクセルサイズ6、色数24
-- **Pixel Art XL**: ピクセルサイズ4、色数32、画像サイズ1024×1024
-
-### 📊 詳細パラメーターの説明
-
-UIの詳細パラメーターセクションには、各設定項目にわかりやすい説明文が表示されるようになりました：
-
-- **ピクセルサイズ**: ドットの大きさ（大きいほど粗いピクセルアート）
-- **カラーパレット**: 使用する色数（少ないほどレトロな雰囲気）
-- **ステップ数**: 生成の詳細度（多いほど高品質だが時間がかかる）
-- **ガイダンス**: プロンプトへの忠実度（高いほどプロンプトに従う）
 
 ## 🔧 技術詳細
 
@@ -249,52 +228,41 @@ UIの詳細パラメーターセクションには、各設定項目にわかり
 - **OS**: macOS 12 (Monterey) 以降
 - **チップ**: M2 Pro推奨（M1、Intel Macでも動作）
 - **メモリ**: 16GB以上推奨
-- **ストレージ**: 10GB以上の空き容量
+- **ストレージ**: 15GB以上の空き容量
 
 ### アーキテクチャ
 
 ```
 pixa/
-├── backend/           # Python Flask サーバー
-│   ├── server.py     # メインサーバーコード
-│   └── requirements.txt  # Python依存関係
-├── frontend/         # Web UI
-│   ├── index.html    # メインHTML
-│   ├── style.css     # スタイルシート
-│   └── app.js        # JavaScript
-├── pygame_app.py     # デスクトップ版 pygame アプリ
-├── start_server.sh   # Web版起動スクリプト
-├── start_pygame.sh   # デスクトップ版起動スクリプト
-├── stop_server.sh    # 停止スクリプト
-├── README.md         # このファイル
-└── LICENSE           # MIT License
-```
-
-### 依存関係 (requirements.txt)
-
-```
-flask==2.3.2
-flask-cors==4.0.0
-torch>=2.0.0
-diffusers>=0.21.0
-transformers>=4.30.0
-accelerate>=0.20.0
-safetensors>=0.3.1
-Pillow>=9.5.0
-numpy>=1.24.0
-imageio>=2.31.0
-pygame
-pygame-gui
-requests
+├── backend/              # Python Flask サーバー
+│   ├── server.py        # メインサーバーコード
+│   ├── model_configs.py # モデル設定
+│   └── requirements.txt # Python依存関係
+├── frontend/            # Web UI
+│   ├── index.html      # メインHTML
+│   ├── style.css       # スタイルシート
+│   └── app.js          # JavaScript
+├── models/              # ダウンロードされたモデル
+├── configs/             # 設定ファイル
+├── pygame_app*.py       # デスクトップ版アプリ各種
+├── download_models.py   # モデルダウンローダー
+├── check_available_models.py # モデル確認ツール
+├── start_server.sh      # Web版起動スクリプト
+├── start_pygame.sh      # デスクトップ版起動スクリプト
+├── stop_server.sh       # 停止スクリプト
+├── README.md            # このファイル
+└── LICENSE              # MIT License
 ```
 
 ### 使用技術
 
 - **バックエンド**: Python, Flask, PyTorch, Diffusers
 - **AI モデル**: 
-  - Stable Diffusion v1.5（標準）
-  - Anything v3.0（アニメ調）
-  - Pixel Art XL（高解像度）
+  - Stable Diffusion v1.5
+  - PublicPrompts/All-In-One-Pixel-Model
+  - Onodofthenorth/SD_PixelArt_SpriteSheet_Generator
+  - kohbanye/pixel-art-style
+  - nerijs/pixel-art-xl (LoRA)
 - **最適化**: Apple MPS (Metal Performance Shaders)
 - **Web版**: HTML5, CSS3, JavaScript, Bootstrap 5
 - **デスクトップ版**: pygame, pygame-gui
@@ -306,14 +274,14 @@ requests
 - Metal Performance Shaders (MPS) による GPU加速
 - 統合メモリアーキテクチャの効率活用
 - Attention slicing によるメモリ使用量削減
-- xFormers による高速化
+- xFormers による高速化（利用可能な場合）
 
 ### 生成時間の目安
 
 - **512×512px, 20steps**: 約10-15秒 (M2 Pro)
 - **256×256px, 20steps**: 約5-8秒 (M2 Pro)
 - **768×768px, 30steps**: 約20-30秒 (M2 Pro)
-- **アニメーション 512×512px, 4フレーム**: 約20-30秒 (M2 Pro)
+- **4方向スプライトシート**: 約40-60秒 (M2 Pro)
 - **アニメーション 512×512px, 8フレーム**: 約40-60秒 (M2 Pro)
 
 ## 🔍 トラブルシューティング
@@ -322,68 +290,59 @@ requests
 
 1. **「サーバーに接続できません」エラー**
    - バックエンドサーバーが起動しているか確認
-   - ポート5000が他のアプリケーションで使用されていないか確認
+   - ポート5001が他のアプリケーションで使用されていないか確認
 
-2. **生成が非常に遅い**
+2. **pixel-art-styleモデルが真っ黒な画像を生成する**
+   - 既知の問題です。代わりにAll-In-One Pixel Modelを使用してください
+   - または、SD1.5に`pixel art style`を追加して使用
+
+3. **生成が非常に遅い**
    - MPSが有効になっているか確認: `python -c "import torch; print(torch.backends.mps.is_available())"`
    - メモリ不足の可能性：他のアプリケーションを閉じてみる
 
-3. **メモリエラー**
+4. **メモリエラー**
    - 画像サイズを小さくする（512px → 256px）
    - ステップ数を減らす（30 → 20）
 
-4. **「Pipeline not initialized」エラー**
-   - サーバーログを確認してモデルのダウンロード状況をチェック
-   - 十分な空き容量があることを確認
-
-### ログの確認
+### モデル確認ツール
 
 ```bash
-# サーバーのログを確認
-tail -f logs/server.log
-
-# Python環境の確認
-python -c "
-import torch
-from diffusers import StableDiffusionPipeline
-print('✅ すべてのライブラリが正常にインストールされています')
-"
+# ダウンロード済みモデルを確認
+python check_available_models.py
 ```
 
 ## 📝 プロンプトのコツ
 
 ### 効果的なプロンプト作成
 
-1. **具体的に記述**:
-   - ❌ `a character`
-   - ✅ `a brave medieval knight with blue armor`
+1. **モデル別のトリガーワード**:
+   - All-In-One: `pixelsprite` または `16bitscene`
+   - Pixel Art XL: プロンプトに `pixel` を追加
+   - Pixel Art Style: `pixelartstyle` を先頭に
 
-2. **スタイルキーワードを追加**:
-   - `pixel art`, `8-bit style`, `retro game`, `sprite`
+2. **具体的に記述**:
+   - ❌ `a character`
+   - ✅ `pixelsprite, a brave medieval knight with blue armor`
 
 3. **品質向上キーワード**:
-   - `high quality`, `detailed`, `clean lines`
+   - `high quality`, `detailed`, `clean lines`, `game asset`
 
 4. **ネガティブプロンプトの活用**:
-   - 英語: `blurry, low quality, bad anatomy, deformed`
-   - 日本語: `ぼやけた、低品質、変な手、歪んだ`
+   - `blurry, low quality, 3d render, realistic, smooth shading`
 
 ### プロンプト例
 
 ```
-# キャラクター
-a cute cat wizard casting spells, pixel art style, 8-bit, magical forest background
+# All-In-One Pixel Model
+pixelsprite, cute cat warrior, simple design, game character
+16bitscene, magical forest background, vibrant colors
 
-# 風景
-a mystical castle on a floating island, pixel art, retro game style, clouds and stars
+# スプライトシート用
+warrior character, clean sprite design, simple colors
+cute robot, game asset, clear silhouette
 
-# オブジェクト
-a magical sword with glowing runes, pixel art sprite, 16-bit style, transparent background
-
-# アニメーション用
-a pixel art knight character, side view, clean sprite sheet style
-a cute slime monster, simple design, suitable for animation
-a flying dragon, pixel art, clear silhouette
+# 一般的なピクセルアート
+pixel art style, 8-bit, retro game sprite, a wizard casting spells
 ```
 
 ## 🤝 サポート
@@ -395,14 +354,15 @@ a flying dragon, pixel art, clear silhouette
 cd backend
 python server.py --debug
 
-# フロントエンドの開発サーバー
-cd frontend
-python -m http.server 8080
+# モデル設定の確認
+python -c "from model_configs import MODEL_CONFIGS; print(MODEL_CONFIGS.keys())"
 ```
 
-### 貢献
+### ユーティリティスクリプト
 
-このプロジェクトは要件定義書に基づいて開発されています。改善提案や新機能のアイデアがある場合は、GitHubのIssuesをご利用ください。
+- `check_available_models.py`: ダウンロード済みモデルの確認
+- `download_models.py`: モデルの個別ダウンロード
+- `enable_pixel_art_style.py`: pixel-art-styleモデルの設定
 
 ## 📄 ライセンス
 
@@ -410,22 +370,24 @@ python -m http.server 8080
 
 ## 🔄 更新履歴
 
-### 2025年5月23日（最新）
-- AIモデル切り替え機能を追加（Stable Diffusion v1.5、Anything v3.0、Pixel Art XL）
-- モデル選択時に推奨設定を自動適用する機能を実装
-- 詳細パラメーターに説明文を追加（ピクセルサイズ、カラーパレット、ステップ数、ガイダンス）
-- UIの色設定を改善（統一感のある白文字表示）
-- モデル選択UIのデザインを強調表示
+### 2025年5月24日（最新）
+- 4方向スプライトシート生成機能を追加
+- スプライトシート生成ボタンを常時表示に変更
+- pixel-art-styleモデルのVAEサポートとフォールバック機能を追加
+- 複数のユーティリティスクリプトを追加
+- モデル管理機能を強化
+- ドキュメントの大幅な更新
 
-### 2025年5月23日（初期版）
-- NFT関連機能を削除
-- スタイルプリセットを改善（8-bit、16-bit、ゲームボーイ風、ミニマル、高精細）
-- ネガティブプロンプトの日本語対応を追加
-- アニメーション生成のワークフローを改善（静止画→アニメーション化）
-- アニメーション設定UIを日本語化（動きのタイプ、滑らかさ、速さ）
+### 2025年5月23日
+- 複数のピクセルアート特化モデルを追加
+- モデル自動ダウンロード機能を実装
+- アニメーション生成のワークフローを改善
+- 日本語対応を強化
 
 ## 🙏 謝辞
 
 - [Stability AI](https://stability.ai/) - Stable Diffusion
 - [Hugging Face](https://huggingface.co/) - Diffusers ライブラリ
+- [PublicPrompts](https://huggingface.co/PublicPrompts) - All-In-One-Pixel-Model
+- [Onodofthenorth](https://huggingface.co/Onodofthenorth) - SD_PixelArt_SpriteSheet_Generator
 - [Apple](https://developer.apple.com/) - Metal Performance Shaders
