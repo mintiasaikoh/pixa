@@ -20,6 +20,18 @@ from datetime import datetime
 import re
 import imageio
 import math
+import gc  # 最適化: メモリ管理用
+
+# 最適化: M2 Pro用設定
+ENABLE_OPTIMIZATIONS = True
+if ENABLE_OPTIMIZATIONS:
+    torch.set_num_threads(6)  # M2 Proの性能コア数
+    if torch.backends.mps.is_available():
+        os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
+        try:
+            torch.mps.set_per_process_memory_fraction(0.75)
+        except:
+            pass  # 古いPyTorchバージョンでは利用不可
 try:
     from model_configs import enhance_prompt_for_model, enhance_negative_prompt_for_model
 except ImportError:
@@ -118,13 +130,9 @@ def initialize_pipeline(model_id="runwayml/stable-diffusion-v1-5"):
                         
                         pipeline = pipeline.to(device)
                         
-                        # メモリ効率の改善
+                        # メモリ効率の改善と最適化
                         if device != torch.device("cpu"):
-                            pipeline.enable_attention_slicing()
-                            try:
-                                pipeline.enable_xformers_memory_efficient_attention()
-                            except Exception as e:
-                                logger.warning(f"xformers not available: {e}")
+                            pipeline = apply_pipeline_optimizations(pipeline, device)
                         
                         current_model_id = model_id
                         logger.info("pixel-art-style loaded successfully from .ckpt")
@@ -267,6 +275,60 @@ def initialize_pipeline(model_id="runwayml/stable-diffusion-v1-5"):
     except Exception as e:
         logger.error(f"Failed to initialize pipeline: {e}")
         return False
+
+def apply_pipeline_optimizations(pipeline, device):
+    """パイプラインに最適化を適用"""
+    if not ENABLE_OPTIMIZATIONS:
+        return pipeline
+        
+    try:
+        # 1. Attention Slicing（メモリ削減）- slice_size=1が最もメモリ効率的
+        pipeline.enable_attention_slicing(slice_size=1)
+        
+        # 2. VAE Slicing（大画像でのメモリ削減）
+        if hasattr(pipeline, 'enable_vae_slicing'):
+            pipeline.enable_vae_slicing()
+        
+        # 3. VAE Tiling（非常に大きな画像用）
+        if hasattr(pipeline, 'enable_vae_tiling'):
+            pipeline.enable_vae_tiling()
+        
+        # 4. xFormers（既に試行されているが、より積極的に）
+        if not hasattr(pipeline, '_xformers_enabled') or not pipeline._xformers_enabled:
+            try:
+                pipeline.enable_xformers_memory_efficient_attention()
+                logger.info("✅ xFormers最適化有効")
+            except:
+                pass
+        
+        # 5. Channels Last（メモリレイアウト最適化）
+        if device.type in ['cuda', 'mps']:
+            pipeline.unet = pipeline.unet.to(memory_format=torch.channels_last)
+            pipeline.vae = pipeline.vae.to(memory_format=torch.channels_last)
+        
+        # 6. torch.compile（PyTorch 2.0+）
+        if hasattr(torch, 'compile') and device.type != 'mps':  # MPSではまだ不安定
+            try:
+                pipeline.unet = torch.compile(pipeline.unet, mode="reduce-overhead")
+                logger.info("✅ torch.compile最適化有効")
+            except:
+                pass
+                
+    except Exception as e:
+        logger.warning(f"最適化の一部が失敗: {e}")
+    
+    return pipeline
+
+def cleanup_memory():
+    """メモリのクリーンアップ"""
+    gc.collect()
+    if torch.backends.mps.is_available():
+        try:
+            torch.mps.empty_cache()
+        except:
+            pass
+    elif torch.cuda.is_available():
+        torch.cuda.empty_cache()
 
 def apply_pixel_art_processing(image, pixel_size=8, palette_size=16):
     """
@@ -664,6 +726,9 @@ def generate_pixel_art():
         buffer.seek(0)
         
         image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        
+        # 最適化: メモリクリーンアップ
+        cleanup_memory()
         
         return jsonify({
             'success': True,
