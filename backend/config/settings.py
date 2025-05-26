@@ -113,6 +113,10 @@ class Config:
 
 # サポートされているアニメーションタイプ
 ANIMATION_TYPES = [
+    # 🎮 実用的なゲーム開発向けアニメーション
+    'walk_cycle', 'idle_breathing', 'attack_slash', 'jump_landing',
+    'walk_4direction', 'damage_flash',
+    # 🎨 エフェクト系アニメーション  
     'glitch_wave', 'explode_reassemble', 'pixel_rain', 'wave_distortion',
     'heartbeat', 'spiral', 'split_merge', 'electric_shock', 'rubberband'
 ]

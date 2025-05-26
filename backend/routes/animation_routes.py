@@ -256,15 +256,24 @@ def get_animation_types():
     """利用可能なアニメーションタイプ一覧"""
     try:
         animation_info = [
-            {'id': 'glitch_wave', 'name': 'グリッチウェーブ', 'description': 'デジタル風の波打ちエフェクト'},
-            {'id': 'explode_reassemble', 'name': '爆発・再集合', 'description': 'パーツが飛び散って戻ってくる'},
-            {'id': 'pixel_rain', 'name': 'ピクセルレイン', 'description': 'ピクセルが雨のように落ちて再構築'},
-            {'id': 'wave_distortion', 'name': '波状歪み', 'description': '水面のような波打ち効果'},
-            {'id': 'heartbeat', 'name': 'ハートビート', 'description': '脈動するような拡大縮小'},
-            {'id': 'spiral', 'name': 'スパイラル', 'description': '螺旋状に回転しながら拡大縮小'},
-            {'id': 'split_merge', 'name': '分裂・結合', 'description': '画像が分裂して回転しながら戻る'},
-            {'id': 'electric_shock', 'name': '電撃エフェクト', 'description': '稲妻のような歪み'},
-            {'id': 'rubberband', 'name': 'ラバーバンド', 'description': 'ゴムのように伸び縮み'},
+            # 🎮 実用的なゲーム開発向けアニメーション
+            {'id': 'walk_cycle', 'name': '歩行サイクル', 'description': '左右の足を交互に動かす歩行アニメーション', 'category': 'game'},
+            {'id': 'idle_breathing', 'name': 'アイドル（呼吸）', 'description': '待機時の微細な呼吸による上下動', 'category': 'game'},
+            {'id': 'attack_slash', 'name': '攻撃（斬撃）', 'description': '予備動作→攻撃→戻りの一連の動作', 'category': 'game'},
+            {'id': 'jump_landing', 'name': 'ジャンプ・着地', 'description': 'しゃがみ→ジャンプ→着地のモーション', 'category': 'game'},
+            {'id': 'walk_4direction', 'name': '4方向歩行', 'description': '上下左右4方向の歩行サイクル', 'category': 'game'},
+            {'id': 'damage_flash', 'name': 'ダメージフラッシュ', 'description': '被ダメージ時の点滅と後退', 'category': 'game'},
+            
+            # 🎨 エフェクト系アニメーション
+            {'id': 'glitch_wave', 'name': 'グリッチウェーブ', 'description': 'デジタル風の波打ちエフェクト', 'category': 'effect'},
+            {'id': 'explode_reassemble', 'name': '爆発・再集合', 'description': 'パーツが飛び散って戻ってくる', 'category': 'effect'},
+            {'id': 'pixel_rain', 'name': 'ピクセルレイン', 'description': 'ピクセルが雨のように落ちて再構築', 'category': 'effect'},
+            {'id': 'wave_distortion', 'name': '波状歪み', 'description': '水面のような波打ち効果', 'category': 'effect'},
+            {'id': 'heartbeat', 'name': 'ハートビート', 'description': '脈動するような拡大縮小', 'category': 'effect'},
+            {'id': 'spiral', 'name': 'スパイラル', 'description': '螺旋状に回転しながら拡大縮小', 'category': 'effect'},
+            {'id': 'split_merge', 'name': '分裂・結合', 'description': '画像が分裂して回転しながら戻る', 'category': 'effect'},
+            {'id': 'electric_shock', 'name': '電撃エフェクト', 'description': '稲妻のような歪み', 'category': 'effect'},
+            {'id': 'rubberband', 'name': 'ラバーバンド', 'description': 'ゴムのように伸び縮み', 'category': 'effect'},
         ]
         
         return jsonify({
