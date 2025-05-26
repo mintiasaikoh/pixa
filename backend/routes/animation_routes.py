@@ -7,11 +7,10 @@ import os
 import tempfile
 from datetime import datetime
 
-from services.ai_service import ai_service
 from services.animation_service import animation_service
 from services.gif_optimization_service import gif_optimization_service
 from utils.image_utils import base64_to_image, image_to_base64
-from config.settings import Config, ANIMATION_TYPES
+from config.settings import Config, ANIMATION_TYPES, GAME_ANIMATION_TYPES, EFFECT_ANIMATION_TYPES
 
 logger = logging.getLogger(__name__)
 

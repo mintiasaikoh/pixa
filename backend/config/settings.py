@@ -111,15 +111,21 @@ class Config:
         }
 
 
-# サポートされているアニメーションタイプ
-ANIMATION_TYPES = [
-    # 🎮 実用的なゲーム開発向けアニメーション
-    'walk_cycle', 'idle_breathing', 'attack_slash', 'jump_landing',
-    'walk_4direction', 'damage_flash',
-    # 🎨 エフェクト系アニメーション  
-    'glitch_wave', 'explode_reassemble', 'pixel_rain', 'wave_distortion',
-    'heartbeat', 'spiral', 'split_merge', 'electric_shock', 'rubberband'
+# サポートされているアニメーションタイプ（リファクタリング後）
+# ゲーム開発向けアニメーション
+GAME_ANIMATION_TYPES = [
+    'walk_cycle', 'idle_breathing', 'attack_slash', 
+    'jump_landing', 'walk_4direction', 'damage_flash'
 ]
+
+# エフェクト系アニメーション  
+EFFECT_ANIMATION_TYPES = [
+    'glitch_wave', 'heartbeat', 'spiral', 'pixel_rain', 'wave_distortion',
+    'explode_reassemble', 'split_merge', 'electric_shock', 'rubberband'
+]
+
+# 全アニメーション種類（後方互換性のため）
+ANIMATION_TYPES = GAME_ANIMATION_TYPES + EFFECT_ANIMATION_TYPES
 
 # デバッグ用設定
 class DevConfig(Config):
