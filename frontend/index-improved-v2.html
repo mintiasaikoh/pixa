@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixa - AI ピクセルアート ジェネレーター</title>
+    <link rel="icon" href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" type="image/x-icon">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="style-improved.css" rel="stylesheet">
+</head>
+<body>
+    <!-- ヘッダー -->
+    <header class="app-header">
+        <div class="app-title">
+            <i class="fas fa-paint-brush"></i>
+            <span>Pixa</span>
+        </div>
+        <div class="header-actions">
+            <button class="btn-secondary-modern" id="settings-btn">
+                <i class="fas fa-cog"></i> 設定
+            </button>
+        </div>
+    </header>
+
+    <!-- メインコンテナ -->
+    <div class="main-container">
+        <!-- サイドパネル -->
+        <aside class="side-panel">
+            <!-- プロンプト入力 -->
+            <div class="card-modern">
+                <div class="card-header-modern">
+                    <i class="fas fa-keyboard"></i>
+                    プロンプト
+                </div>
+                <div class="mb-3">
+                    <textarea 
+                        id="prompt" 
+                        class="form-control-modern" 
+                        rows="3" 
+                        placeholder="生成したい画像を説明してください...&#10;例: 可愛い猫の戦士が森にいる"
+                        maxlength="500"></textarea>
+                    <small class="text-secondary d-block mt-1">日本語・英語どちらでもOK！</small>
+                </div>
+                <div>
+                    <label class="form-label-modern">ネガティブプロンプト</label>
+                    <textarea 
+                        id="negative-prompt" 
+                        class="form-control-modern" 
+                        rows="2" 
+                        placeholder="除外したい要素...&#10;例: ぼやけた, 低品質"></textarea>
+                </div>
+            </div>
+
+            <!-- AIモデル選択 -->
+            <div class="card-modern">
+                <div class="card-header-modern">
+                    <i class="fas fa-cube"></i>
+                    AIモデル
+                </div>
+                <select id="model" class="form-select-modern">
+                    <option value="PublicPrompts/All-In-One-Pixel-Model">All-In-One Pixel Model（推奨）🎮</option>
+                    <option value="runwayml/stable-diffusion-v1-5">Stable Diffusion v1.5（標準）</option>
+                    <option value="Onodofthenorth/SD_PixelArt_SpriteSheet_Generator">スプライトシート生成 🕹️</option>
+                    <option value="nerijs/pixel-art-xl">Pixel Art XL LoRA（高速）✨</option>
+                </select>
+                <small id="model-description" class="text-secondary d-block mt-2">
+                    最も汎用性の高いピクセルアートモデル
+                </small>
+            </div>
+
+            <!-- スタイルプリセット -->
+            <div class="card-modern">
+                <div class="card-header-modern">
+                    <i class="fas fa-palette"></i>
+                    スタイルプリセット
+                </div>
+                <div class="style-presets">
+                    <div class="style-preset active" data-preset="8bit">8-bit</div>
+                    <div class="style-preset" data-preset="16bit">16-bit</div>
+                    <div class="style-preset" data-preset="gameboy">ゲームボーイ</div>
+                    <div class="style-preset" data-preset="minimal">ミニマル</div>
+                </div>
+            </div>
+
+            <!-- 詳細設定 -->
+            <div class="card-modern">
+                <div class="card-header-modern">
+                    <i class="fas fa-sliders-h"></i>
+                    詳細設定
+                </div>
+                
+                <!-- ピクセルサイズ -->
+                <div class="range-container">
+                    <div class="range-header">
+                        <label class="form-label-modern mb-0">ピクセルサイズ</label>
+                        <span class="range-value" id="pixel-size-value">8</span>
+                    </div>
+                    <input type="range" id="pixel-size" class="form-range-modern" 
+                           min="2" max="32" value="8" step="2">
+                </div>
+
+                <!-- カラーパレット -->
+                <div class="range-container">
+                    <div class="range-header">
+                        <label class="form-label-modern mb-0">カラーパレット</label>
+                        <span class="range-value" id="palette-size-value">16色</span>
+                    </div>
+                    <input type="range" id="palette-size" class="form-range-modern" 
+                           min="4" max="64" value="16" step="4">
+                </div>
+
+                <!-- 生成ステップ数 -->
+                <div class="range-container">
+                    <div class="range-header">
+                        <label class="form-label-modern mb-0">生成ステップ数</label>
+                        <span class="range-value" id="steps-value">20</span>
+                    </div>
+                    <input type="range" id="steps" class="form-range-modern" 
+                           min="10" max="50" value="20" step="5">
+                </div>
+
+                <!-- 画像サイズ -->
+                <div class="mt-3">
+                    <label class="form-label-modern">画像サイズ</label>
+                    <select id="image-size" class="form-select-modern">
+                        <option value="256">256 x 256</option>
+                        <option value="512" selected>512 x 512</option>
+                        <option value="768">768 x 768</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 生成ボタン -->
+            <button id="generate-btn" class="btn-pixel">
+                <i class="fas fa-magic"></i> ピクセルアートを生成
+            </button>
+
+            <!-- 特殊生成ボタン -->
+            <div class="mt-3 d-grid gap-2">
+                <button id="generate-sprite-btn" class="btn-secondary-modern">
+                    <i class="fas fa-th"></i> 4方向スプライトシート生成
+                </button>
+                <button id="generate-glitch-btn" class="btn-secondary-modern">
+                    <i class="fas fa-bolt"></i> グリッチアート生成
+                </button>
+            </div>
+        </aside>
+
+        <!-- メインエリア -->
+        <main class="main-area">
+            <div class="canvas-area">
+                <!-- プレースホルダー -->
+                <div id="placeholder" class="placeholder-container">
+                    <div class="placeholder-icon">
+                        <i class="fas fa-image"></i>
+                    </div>
+                    <div class="placeholder-text">ピクセルアートを生成しよう！</div>
+                    <div class="placeholder-subtext">左のパネルでプロンプトを入力して開始</div>
+                </div>
+
+                <!-- 生成中インジケーター -->
+                <div id="progress" class="progress-container" style="display: none;">
+                    <svg class="progress-ring" viewBox="0 0 120 120">
+                        <circle class="progress-ring-circle" cx="60" cy="60" r="54"></circle>
+                    </svg>
+                    <div class="progress-text text-secondary">
+                        <span id="progress-message">生成中...</span>
+                        <span id="progress-time" class="d-block mt-2"></span>
+                    </div>
+                </div>
+
+                <!-- 結果表示 -->
+                <div id="result" class="result-container" style="display: none;">
+                    <div class="image-preview">
+                        <img id="result-image" src="" alt="Generated pixel art">
+                    </div>
+                </div>
+
+                <!-- イメージコントロール -->
+                <div id="image-controls" class="image-controls" style="display: none;">
+                    <button id="download-btn" class="btn-secondary-modern">
+                        <i class="fas fa-download"></i> ダウンロード
+                    </button>
+                    <button id="copy-btn" class="btn-secondary-modern">
+                        <i class="fas fa-copy"></i> コピー
+                    </button>
+                    <button id="share-btn" class="btn-secondary-modern">
+                        <i class="fas fa-share"></i> 共有
+                    </button>
+                    <button id="animate-btn" class="btn-secondary-modern">
+                        <i class="fas fa-film"></i> アニメーション化
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- トースト通知 -->
+    <div id="toast" class="toast-modern" style="display: none;">
+        <i class="fas fa-check-circle text-success"></i>
+        <span id="toast-message">成功しました！</span>
+    </div>
+
+    <!-- グリッチアート設定モーダル -->
+    <div class="modal fade" id="glitchModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-light">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">
+                        <i class="fas fa-bolt text-warning"></i> グリッチアート設定
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">スタイル</label>
+                        <select id="glitch-style" class="form-select bg-dark text-light">
+                            <option value="full">フル（全ての効果）</option>
+                            <option value="lines">歪んだ線</option>
+                            <option value="geometric">幾何学パターン</option>
+                            <option value="ascii">アスキーアート風</option>
+                            <option value="noise">ノイズパターン</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ピクセルサイズ</label>
+                        <input type="range" id="glitch-pixel-size" class="form-range" 
+                               min="2" max="16" value="4" step="2">
+                        <small class="text-muted">値: <span id="glitch-pixel-size-value">4</span></small>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="glitch-animation" class="form-check-input">
+                        <label class="form-check-label" for="glitch-animation">
+                            アニメーション生成
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="button" id="generate-glitch-confirm" class="btn btn-primary">
+                        <i class="fas fa-bolt"></i> 生成
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="app-improved.js"></script>
+</body>
+</html>
