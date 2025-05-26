@@ -25,6 +25,9 @@ Pixa - AI ピクセルアート ジェネレーターの全ドキュメントで
 
 ### 📋 その他
 - [プロジェクト構造](./PROJECT_STRUCTURE.md) - ファイル構成の説明
+- [技術詳細](./TECHNICAL_DETAILS.md) - アーキテクチャとAPI仕様
+- [README更新履歴](./README_UPDATE.md) - README.mdの変更内容
+- [ドキュメント整理](./DOCUMENT_ORGANIZATION.md) - ドキュメント構成
 
 ## 🚀 クイックスタート
 
