@@ -15,6 +15,8 @@ Pixa is an Apple Silicon (M2 Pro) optimized AI pixel art generator built with St
 - **Japanese translation system**: Built-in dictionary-based Japanese→English translation for prompts
 - **Pixel art post-processing**: Custom pipeline that applies pixelization and color palette restrictions
 - **GIF animation generation**: Creates animated pixel art GIFs from static images or frame sequences
+- **Creative animations** (`creative_animations.py`): Advanced animation effects with physics-based movements
+- **Glitch art generator** (`glitch_art_generator.py`): Procedural glitch art generation without AI
 
 ### Frontend (`frontend/`)
 - **Vanilla JavaScript architecture** (`app.js`): Single `PixelArtGenerator` class manages entire UI
@@ -56,14 +58,22 @@ Pixa is an Apple Silicon (M2 Pro) optimized AI pixel art generator built with St
 ### Animation Types
 
 #### 1. Basic Animations
-- **Walk Cycle**: Character walking animation
-- **Idle Animation**: Breathing or subtle movement while standing
-- **Simple Motions**: Blinking, swaying, rotating
+- **Idle**: Gentle up-down floating motion
+- **Walk**: Side-to-side tilting walk cycle
+- **Bounce**: Jumping motion with gravity
+- **Glow**: Brightness pulsing effect
+- **Rotate**: Simple 360-degree rotation
 
-#### 2. Effect Animations
-- **Particle Effects**: Fire, water, wind effects
-- **Glow Effects**: Pulsing light or energy
-- **Transform Animations**: Morphing or shape changes
+#### 2. Creative Animations (New!)
+- **Glitch Wave**: Digital wave distortion with random glitch effects
+- **Explode & Reassemble**: Parts fly apart and smoothly return
+- **Pixel Rain**: Pixels fall like rain and reconstruct the image
+- **Wave Distortion**: Water-like ripple effects
+- **Heartbeat**: Pulsing scale with realistic heartbeat pattern
+- **Spiral**: Rotating while scaling in spiral motion
+- **Split & Merge**: Image splits into 4 parts that rotate and merge back
+- **Electric Shock**: Lightning effects with image distortion
+- **Rubber Band**: Elastic stretching and squashing
 
 ### Technical Specifications
 
@@ -107,6 +117,7 @@ def generate_animation():
 ```txt
 imageio==2.31.1  # For GIF generation
 imageio-ffmpeg==0.4.8  # Optional video processing
+numpy  # For advanced image processing in creative animations
 ```
 
 ### Implementation Phases
@@ -171,6 +182,9 @@ curl -X POST http://localhost:5001/generate -H "Content-Type: application/json" 
 # Test animation generation
 curl -X POST http://localhost:5001/generate_animation -H "Content-Type: application/json" -d '{"prompt": "walking cat", "animation_type": "walk", "frame_count": 4}'
 
+# Test creative animations
+python scripts/test_creative_animations.py
+
 # Check Apple Silicon optimization
 python -c "import torch; print(f'MPS available: {torch.backends.mps.is_available()}')"
 ```
@@ -204,6 +218,14 @@ The translation system uses a comprehensive dictionary mapping Japanese terms to
 2. Apply pixel art processing to each frame
 3. Optimize frame timing and transitions
 4. Export as optimized GIF with proper loop settings
+
+### Creative Animation Processing
+The `creative_animations.py` module provides advanced animation effects:
+- **Physics-based movements**: Gravity, elasticity, and momentum calculations
+- **Easing functions**: Smooth acceleration and deceleration
+- **Random elements**: Controlled randomness for organic effects
+- **NumPy optimizations**: Fast array operations for real-time processing
+- **Particle systems**: For effects like pixel rain and explosions
 ## Constraints & Requirements
 
 - **Apple Silicon required** for optimal performance (M1/M2)
@@ -220,3 +242,16 @@ Key configuration happens in `server.py`:
 - Memory optimizations: attention slicing, xformers (optional)
 - Image generation parameters: configurable via API endpoints
 - Animation parameters: frame count, FPS, interpolation methods
+
+## Recent Updates (2025-05-26)
+
+### Creative Animations Feature
+- Added 9 new creative animation types with physics-based movements
+- Created `creative_animations.py` module for advanced effects
+- Implemented easing functions and particle systems
+- Added test script `scripts/test_creative_animations.py`
+
+### Smart App Launcher
+- Created `Pixa.app` with automatic project detection
+- Added `create_smart_app.sh` for easy app creation
+- Implemented background server management

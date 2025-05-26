@@ -61,8 +61,22 @@ class PixelArtGenerator {
             downloadGifBtn: document.getElementById('download-gif-btn'),
             animationStatus: document.getElementById('animation-status'),
             animationStatusText: document.getElementById('animation-status-text'),
-            newImageBtn: document.getElementById('new-image-btn')
+            newImageBtn: document.getElementById('new-image-btn'),
+            // グリッチアート関連
+            generateGlitchArtBtn: document.getElementById('generate-glitch-art-btn'),
+            glitchStyle: document.getElementById('glitch-style'),
+            glitchPixelSize: document.getElementById('glitch-pixel-size'),
+            glitchPixelSizeValue: document.getElementById('glitch-pixel-size-value'),
+            glitchAnimation: document.getElementById('glitch-animation'),
+            glitchFrameCount: document.getElementById('glitch-frame-count'),
+            glitchFrameCountValue: document.getElementById('glitch-frame-count-value'),
+            glitchFrameCountContainer: document.getElementById('glitch-frame-count-container')
         };
+        
+        // デバッグ: 重要な要素の確認
+        console.log('Width element:', this.elements.width);
+        console.log('Height element:', this.elements.height);
+        console.log('Glitch style element:', this.elements.glitchStyle);
     }
     
     bindEvents() {
@@ -138,6 +152,38 @@ class PixelArtGenerator {
         
         // 新しい画像を生成ボタン
         this.elements.newImageBtn.addEventListener('click', () => this.resetToNewImage());
+        
+        // グリッチアート生成ボタン
+        if (this.elements.generateGlitchArtBtn) {
+            this.elements.generateGlitchArtBtn.addEventListener('click', () => this.generateGlitchArt());
+        }
+        
+        // グリッチピクセルサイズスライダー
+        if (this.elements.glitchPixelSize) {
+            this.elements.glitchPixelSize.addEventListener('input', (e) => {
+                if (this.elements.glitchPixelSizeValue) {
+                    this.elements.glitchPixelSizeValue.textContent = e.target.value;
+                }
+            });
+        }
+        
+        // グリッチアニメーションチェックボックス
+        if (this.elements.glitchAnimation) {
+            this.elements.glitchAnimation.addEventListener('change', (e) => {
+                if (this.elements.glitchFrameCountContainer) {
+                    this.elements.glitchFrameCountContainer.style.display = e.target.checked ? 'block' : 'none';
+                }
+            });
+        }
+        
+        // グリッチフレーム数スライダー
+        if (this.elements.glitchFrameCount) {
+            this.elements.glitchFrameCount.addEventListener('input', (e) => {
+                if (this.elements.glitchFrameCountValue) {
+                    this.elements.glitchFrameCountValue.textContent = e.target.value;
+                }
+            });
+        }
         
         // クイックプロンプト
         this.elements.quickPrompts.forEach(btn => {
@@ -283,6 +329,12 @@ class PixelArtGenerator {
     async generateImage() {
         if (this.isGenerating) return;
         
+        // 必要な要素の存在チェック
+        if (!this.elements.prompt) {
+            this.showStatus('プロンプト入力欄が見つかりません', 'error');
+            return;
+        }
+        
         const prompt = this.elements.prompt.value.trim();
         if (!prompt) {
             this.showStatus('プロンプトを入力してください', 'error');
@@ -325,42 +377,55 @@ class PixelArtGenerator {
     
     getGenerationParams() {
         return {
-            prompt: this.elements.prompt.value.trim(),
-            negative_prompt: this.elements.negativePrompt.value.trim(),
-            model_id: this.elements.model.value,
-            width: parseInt(this.elements.width.value),
-            height: parseInt(this.elements.height.value),
-            pixel_size: parseInt(this.elements.pixelSize.value),
-            palette_size: parseInt(this.elements.paletteSize.value),
-            steps: parseInt(this.elements.steps.value),
-            guidance_scale: parseFloat(this.elements.guidance.value),
-            seed: this.elements.seed.value ? parseInt(this.elements.seed.value) : null
+            prompt: this.elements.prompt?.value.trim() || '',
+            negative_prompt: this.elements.negativePrompt?.value.trim() || '',
+            model_id: this.elements.model?.value || 'runwayml/stable-diffusion-v1-5',
+            width: parseInt(this.elements.width?.value) || 512,
+            height: parseInt(this.elements.height?.value) || 512,
+            pixel_size: parseInt(this.elements.pixelSize?.value) || 8,
+            palette_size: parseInt(this.elements.paletteSize?.value) || 16,
+            steps: parseInt(this.elements.steps?.value) || 20,
+            guidance_scale: parseFloat(this.elements.guidance?.value) || 7.5,
+            seed: this.elements.seed?.value ? parseInt(this.elements.seed.value) : null
         };
     }
     
-    startGeneration() {
+    startGeneration(message = '生成中...') {
         this.isGenerating = true;
-        this.elements.generateBtn.disabled = true;
-        this.elements.generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>生成中...';
+        if (this.elements.generateBtn) {
+            this.elements.generateBtn.disabled = true;
+            this.elements.generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>' + message;
+        }
         
-        this.elements.progressContainer.style.display = 'block';
-        this.elements.progressBar.style.width = '0%';
+        if (this.elements.progressContainer && this.elements.progressBar) {
+            this.elements.progressContainer.style.display = 'block';
+            this.elements.progressBar.style.width = '0%';
+            
+            // プログレスアニメーション
+            this.progressInterval = setInterval(() => {
+                const currentWidth = parseFloat(this.elements.progressBar.style.width) || 0;
+                if (currentWidth < 90) {
+                    this.elements.progressBar.style.width = (currentWidth + Math.random() * 10) + '%';
+                }
+            }, 500);
+        }
         
-        // プログレスアニメーション
-        this.progressInterval = setInterval(() => {
-            const currentWidth = parseFloat(this.elements.progressBar.style.width) || 0;
-            if (currentWidth < 90) {
-                this.elements.progressBar.style.width = (currentWidth + Math.random() * 10) + '%';
-            }
-        }, 500);
+        if (this.elements.progressText) {
+            this.elements.progressText.textContent = message;
+        }
     }
     
     endGeneration() {
         this.isGenerating = false;
-        this.elements.generateBtn.disabled = false;
-        this.elements.generateBtn.innerHTML = '<i class="fas fa-magic me-2"></i>ピクセルアートを生成';
+        if (this.elements.generateBtn) {
+            this.elements.generateBtn.disabled = false;
+            this.elements.generateBtn.innerHTML = '<i class="fas fa-magic me-2"></i>ピクセルアートを生成';
+        }
         
-        this.elements.progressContainer.style.display = 'none';
+        if (this.elements.progressContainer) {
+            this.elements.progressContainer.style.display = 'none';
+        }
+        
         if (this.progressInterval) {
             clearInterval(this.progressInterval);
         }
@@ -373,24 +438,38 @@ class PixelArtGenerator {
         this.savedImageForAnimation = null; // 新しい画像が生成されたらアニメーション用の保存画像もリセット
         
         // アニメーション関連UIをリセット
-        this.elements.animationStatus.style.display = 'none';
-        this.elements.newImageBtn.style.display = 'none';
+        if (this.elements.animationStatus) {
+            this.elements.animationStatus.style.display = 'none';
+        }
+        if (this.elements.newImageBtn) {
+            this.elements.newImageBtn.style.display = 'none';
+        }
         
         // 画像を表示
-        this.elements.resultImage.src = imageData;
-        this.elements.resultImage.style.display = 'block';
-        this.elements.placeholder.style.display = 'none';
-        this.elements.imageControls.style.display = 'block';
-        this.elements.downloadGifBtn.style.display = 'none';  // GIFダウンロードボタンを非表示
+        if (this.elements.resultImage) {
+            this.elements.resultImage.src = imageData;
+            this.elements.resultImage.style.display = 'block';
+        }
+        if (this.elements.placeholder) {
+            this.elements.placeholder.style.display = 'none';
+        }
+        if (this.elements.imageControls) {
+            this.elements.imageControls.style.display = 'block';
+        }
+        if (this.elements.downloadGifBtn) {
+            this.elements.downloadGifBtn.style.display = 'none';  // GIFダウンロードボタンを非表示
+        }
         
         // 生成情報を表示
-        this.elements.generationInfo.innerHTML = `
-            ${parameters.width}×${parameters.height}px<br>
-            ピクセル: ${parameters.pixel_size}px<br>
-            パレット: ${parameters.palette_size}色<br>
-            ステップ: ${parameters.steps}<br>
-            ${parameters.seed ? `シード: ${parameters.seed}` : 'ランダムシード'}
-        `;
+        if (this.elements.generationInfo && parameters) {
+            this.elements.generationInfo.innerHTML = `
+                ${parameters.width}×${parameters.height}px<br>
+                ピクセル: ${parameters.pixel_size}px<br>
+                パレット: ${parameters.palette_size}色<br>
+                ステップ: ${parameters.steps}<br>
+                ${parameters.seed ? `シード: ${parameters.seed}` : 'ランダムシード'}
+            `;
+        }
         
         // 大きな画像の場合のヒント
         if (parameters.width >= 1024 || parameters.height >= 1024) {
@@ -497,29 +576,43 @@ class PixelArtGenerator {
     
     startAnimationGeneration() {
         this.isGenerating = true;
-        this.elements.generateAnimationBtn.disabled = true;
-        this.elements.generateAnimationBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>生成中...';
+        if (this.elements.generateAnimationBtn) {
+            this.elements.generateAnimationBtn.disabled = true;
+            this.elements.generateAnimationBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>生成中...';
+        }
         
-        this.elements.progressContainer.style.display = 'block';
-        this.elements.progressBar.style.width = '0%';
-        this.elements.progressText.textContent = 'アニメーション生成中...';
+        if (this.elements.progressContainer && this.elements.progressBar) {
+            this.elements.progressContainer.style.display = 'block';
+            this.elements.progressBar.style.width = '0%';
+        }
+        if (this.elements.progressText) {
+            this.elements.progressText.textContent = 'アニメーション生成中...';
+        }
         
         // プログレスアニメーション
         this.progressInterval = setInterval(() => {
-            const currentWidth = parseFloat(this.elements.progressBar.style.width) || 0;
-            if (currentWidth < 90) {
-                this.elements.progressBar.style.width = (currentWidth + Math.random() * 10) + '%';
+            if (this.elements.progressBar) {
+                const currentWidth = parseFloat(this.elements.progressBar.style.width) || 0;
+                if (currentWidth < 90) {
+                    this.elements.progressBar.style.width = (currentWidth + Math.random() * 10) + '%';
+                }
             }
         }, 500);
     }
     
     endAnimationGeneration() {
         this.isGenerating = false;
-        this.elements.generateAnimationBtn.disabled = false;
-        this.elements.generateAnimationBtn.innerHTML = '<i class="fas fa-play-circle me-2"></i>アニメーションを生成';
+        if (this.elements.generateAnimationBtn) {
+            this.elements.generateAnimationBtn.disabled = false;
+            this.elements.generateAnimationBtn.innerHTML = '<i class="fas fa-play-circle me-2"></i>アニメーションを生成';
+        }
         
-        this.elements.progressContainer.style.display = 'none';
-        this.elements.progressText.textContent = '生成中...';
+        if (this.elements.progressContainer) {
+            this.elements.progressContainer.style.display = 'none';
+        }
+        if (this.elements.progressText) {
+            this.elements.progressText.textContent = '生成中...';
+        }
         if (this.progressInterval) {
             clearInterval(this.progressInterval);
         }
@@ -529,19 +622,29 @@ class PixelArtGenerator {
         this.currentAnimation = gifData;
         
         // GIFを表示
-        this.elements.resultImage.src = gifData;
-        this.elements.resultImage.style.display = 'block';
-        this.elements.placeholder.style.display = 'none';
-        this.elements.imageControls.style.display = 'block';
-        this.elements.downloadGifBtn.style.display = 'inline-block';
+        if (this.elements.resultImage) {
+            this.elements.resultImage.src = gifData;
+            this.elements.resultImage.style.display = 'block';
+        }
+        if (this.elements.placeholder) {
+            this.elements.placeholder.style.display = 'none';
+        }
+        if (this.elements.imageControls) {
+            this.elements.imageControls.style.display = 'block';
+        }
+        if (this.elements.downloadGifBtn) {
+            this.elements.downloadGifBtn.style.display = 'inline-block';
+        }
         
         // 生成情報を表示
-        this.elements.generationInfo.innerHTML = `
-            アニメーション: ${info.animation_type}<br>
-            フレーム数: ${info.frame_count}<br>
-            FPS: ${info.fps}<br>
-            ${info.message || ''}
-        `;
+        if (this.elements.generationInfo) {
+            this.elements.generationInfo.innerHTML = `
+                アニメーション: ${info.animation_type}<br>
+                フレーム数: ${info.frame_count}<br>
+                FPS: ${info.fps}<br>
+                ${info.message || ''}
+            `;
+        }
     }
     
     downloadGif() {
@@ -631,12 +734,16 @@ class PixelArtGenerator {
         
         // アニメーション設定アコーディオンを開く
         const animationCollapse = document.getElementById('animationCollapse');
-        const bsCollapse = new bootstrap.Collapse(animationCollapse, {
-            show: true
-        });
+        if (animationCollapse) {
+            const bsCollapse = new bootstrap.Collapse(animationCollapse, {
+                show: true
+            });
+        }
         
         // アニメーション生成ボタンにフォーカス
-        this.elements.generateAnimationBtn.scrollIntoView({ behavior: 'smooth' });
+        if (this.elements.generateAnimationBtn) {
+            this.elements.generateAnimationBtn.scrollIntoView({ behavior: 'smooth' });
+        }
         
         // 現在の画像パラメータを保存
         this.savedImageForAnimation = {
@@ -645,9 +752,15 @@ class PixelArtGenerator {
         };
         
         // ステータス表示
-        this.elements.animationStatus.style.display = 'block';
-        this.elements.animationStatusText.textContent = '選択された画像をアニメーション化できます';
-        this.elements.newImageBtn.style.display = 'block';
+        if (this.elements.animationStatus) {
+            this.elements.animationStatus.style.display = 'block';
+        }
+        if (this.elements.animationStatusText) {
+            this.elements.animationStatusText.textContent = '現在の画像をアニメーション化します';
+        }
+        if (this.elements.newImageBtn) {
+            this.elements.newImageBtn.style.display = 'block';
+        }
         
         this.showStatus('アニメーション設定を調整して「アニメーションを生成」を押してください', 'info');
     }
@@ -655,8 +768,12 @@ class PixelArtGenerator {
     resetToNewImage() {
         // アニメーション化モードを解除
         this.savedImageForAnimation = null;
-        this.elements.animationStatus.style.display = 'none';
-        this.elements.newImageBtn.style.display = 'none';
+        if (this.elements.animationStatus) {
+            this.elements.animationStatus.style.display = 'none';
+        }
+        if (this.elements.newImageBtn) {
+            this.elements.newImageBtn.style.display = 'none';
+        }
         
         // アニメーション設定を閉じる
         const animationCollapse = document.getElementById('animationCollapse');
@@ -793,6 +910,12 @@ class PixelArtGenerator {
     async generateSpriteSheet() {
         if (this.isGenerating) return;
         
+        // 要素の存在チェック
+        if (!this.elements.prompt || !this.elements.width || !this.elements.height) {
+            this.showStatus('必要な要素が見つかりません', 'error');
+            return;
+        }
+        
         const prompt = this.elements.prompt.value.trim();
         if (!prompt) {
             this.showStatus('プロンプトを入力してください', 'error');
@@ -800,19 +923,21 @@ class PixelArtGenerator {
         }
         
         this.startGeneration();
-        this.elements.progressText.textContent = '4方向スプライトシート生成中...';
+        if (this.elements.progressText) {
+            this.elements.progressText.textContent = '4方向スプライトシート生成中...';
+        }
         
         try {
             const params = {
                 prompt: prompt,
-                negative_prompt: this.elements.negativePrompt.value.trim(),
-                width: parseInt(this.elements.width.value),
-                height: parseInt(this.elements.height.value),
-                pixel_size: parseInt(this.elements.pixelSize.value),
-                palette_size: parseInt(this.elements.paletteSize.value),
-                steps: parseInt(this.elements.steps.value),
-                guidance_scale: parseFloat(this.elements.guidance.value),
-                seed: this.elements.seed.value ? parseInt(this.elements.seed.value) : null
+                negative_prompt: this.elements.negativePrompt?.value.trim() || '',
+                width: parseInt(this.elements.width.value) || 512,
+                height: parseInt(this.elements.height.value) || 512,
+                pixel_size: parseInt(this.elements.pixelSize?.value) || 8,
+                palette_size: parseInt(this.elements.paletteSize?.value) || 16,
+                steps: parseInt(this.elements.steps?.value) || 20,
+                guidance_scale: parseFloat(this.elements.guidance?.value) || 7.5,
+                seed: this.elements.seed?.value ? parseInt(this.elements.seed.value) : null
             };
             
             const response = await fetch(`${this.apiUrl}/generate_sprite_sheet`, {
@@ -845,6 +970,112 @@ class PixelArtGenerator {
             
         } catch (error) {
             console.error('スプライトシート生成エラー:', error);
+            this.showStatus(`エラー: ${error.message}`, 'error');
+        } finally {
+            this.endGeneration();
+        }
+    }
+    
+    async generateGlitchArt() {
+        if (this.isGenerating) return;
+        
+        // プロンプトチェック
+        if (!this.elements.prompt) {
+            this.showStatus('プロンプト入力欄が見つかりません', 'error');
+            return;
+        }
+        
+        const prompt = this.elements.prompt.value.trim();
+        if (!prompt) {
+            this.showStatus('グリッチアート用のプロンプトを入力してください', 'error');
+            return;
+        }
+        
+        // 要素の存在チェック（グリッチピクセルサイズのみ確認）
+        if (!this.elements.glitchPixelSize) {
+            this.showStatus('グリッチアート設定の要素が見つかりません', 'error');
+            return;
+        }
+        
+        // width/height要素の存在チェック
+        if (!this.elements.width || !this.elements.height) {
+            this.showStatus('サイズ設定の要素が見つかりません', 'error');
+            return;
+        }
+        
+        try {
+            this.startGeneration('AIグリッチアートを生成中...');
+            
+            // パラメータ収集
+            const params = {
+                prompt: prompt,
+                negative_prompt: this.elements.negativePrompt?.value.trim() || '',
+                width: parseInt(this.elements.width.value) || 512,
+                height: parseInt(this.elements.height.value) || 512,
+                pixel_size: parseInt(this.elements.glitchPixelSize.value),
+                steps: parseInt(this.elements.steps?.value) || 20,
+                guidance_scale: parseFloat(this.elements.guidance?.value) || 7.5,
+                seed: this.elements.seed?.value ? parseInt(this.elements.seed.value) : null
+            };
+            
+            const response = await fetch('/generate_glitch_art', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(params)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // displayResult用のパラメータを作成
+                const displayParams = {
+                    width: params.width,
+                    height: params.height,
+                    pixel_size: params.pixel_size,
+                    palette_size: 0,  // グリッチアートでは使用しない
+                    steps: 0,  // グリッチアートでは使用しない
+                    seed: params.seed
+                };
+                
+                this.displayResult(data.image, displayParams);
+                
+                const typeText = data.type === 'animation' ? 'アニメーション' : '静止画';
+                this.showStatus(`グリッチアート${typeText}生成完了！`, 'success');
+                
+                // 生成情報を上書き（グリッチアート専用）
+                if (this.elements.generationInfo) {
+                    this.elements.generationInfo.innerHTML = `
+                        タイプ: AIグリッチアート<br>
+                        サイズ: ${params.width}×${params.height}px<br>
+                        ピクセルサイズ: ${params.pixel_size}<br>
+                        プロンプト: ${params.prompt.substring(0, 50)}${params.prompt.length > 50 ? '...' : ''}
+                    `;
+                }
+                
+                // アニメーションの場合は、ダウンロードボタンのテキストを変更
+                if (data.type === 'animation') {
+                    if (this.elements.downloadBtn) {
+                        this.elements.downloadBtn.innerHTML = '<i class="fas fa-download me-2"></i>GIFをダウンロード';
+                    }
+                    this.currentAnimation = data.image;
+                } else {
+                    if (this.elements.downloadBtn) {
+                        this.elements.downloadBtn.innerHTML = '<i class="fas fa-download me-2"></i>ダウンロード';
+                    }
+                    this.currentImage = data.image;
+                }
+            } else {
+                throw new Error(data.error || 'グリッチアート生成に失敗しました');
+            }
+            
+        } catch (error) {
+            console.error('グリッチアート生成エラー:', error);
             this.showStatus(`エラー: ${error.message}`, 'error');
         } finally {
             this.endGeneration();

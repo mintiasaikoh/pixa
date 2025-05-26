@@ -2,8 +2,6 @@
 
 M2 Pro Mac向けに最適化されたStable Diffusionベースのピクセルアート生成アプリケーションです。
 
-> ⚠️ **重要**: このリポジトリには複数のバージョンが含まれています。詳細は[バージョンについて](#バージョンについて)を参照してください。
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Apple Silicon](https://img.shields.io/badge/Apple_Silicon-M1%2FM2-orange.svg)](https://support.apple.com/en-us/HT211814)
@@ -20,6 +18,9 @@ M2 Pro Mac向けに最適化されたStable Diffusionベースのピクセルア
 - **🌐 直感的なWeb UI**: モダンで使いやすいインターフェース
 - **🖥️ デスクトップアプリ**: pygame版でネイティブデスクトップ体験
 - **⚡ 高速生成**: 512×512px画像が約10-15秒
+- **🎮 レトロゲーム風テンプレート**: ファミコン、スーファミ、ゲームボーイ、アーケード風スタイル
+- **📦 統合設定パネル**: すべての設定を左パネルに集約、アコーディオン式で整理
+- **✨ 品質プリセット**: 高速/標準/高品質をワンクリックで選択
 - **✨ グリッチアート生成**: プロシージャルなグリッチアート・ジェネレーター（NEW!）
 - **🇯🇵 日本語プロンプト対応**: 自動翻訳で日本語入力をサポート
 - **🎯 複数のスタイルプリセット**: 8-bit、16-bit、ゲームボーイ風、ミニマル、高精細
@@ -426,7 +427,22 @@ python -c "from model_configs import MODEL_CONFIGS; print(MODEL_CONFIGS.keys())"
 
 ## 🔄 更新履歴
 
-### 2025年5月25日（最新）
+### 2025年5月27日（最新）
+- **UI統合版を実装**
+  - すべての設定を左パネルに統合（設定モーダルを削除）
+  - レトロゲーム風テンプレート4種類を追加
+  - アコーディオン機能で設定を整理
+  - 品質プリセット機能（高速/標準/高品質）
+  - トースト通知機能を実装
+- **日本語処理の改善**
+  - 日本語プロンプト自動翻訳機能
+  - クリエイティブアニメーション生成
+  - グリッチアート生成機能の強化
+- **リポジトリの整理**
+  - 不要なバージョンを削除
+  - ファイル構造をシンプルに
+
+### 2025年5月25日
 - **グリッチアート生成機能を追加**
   - プロシージャルなグリッチアート生成
   - 5つの異なるスタイル（フル、歪んだ線、幾何学、アスキー、ノイズ）
@@ -460,39 +476,5 @@ python -c "from model_configs import MODEL_CONFIGS; print(MODEL_CONFIGS.keys())"
 - [Stability AI](https://stability.ai/) - Stable Diffusion
 - [Hugging Face](https://huggingface.co/) - Diffusers ライブラリ
 - [PublicPrompts](https://huggingface.co/PublicPrompts) - All-In-One-Pixel-Model
-
-## 📌 バージョンについて
-
-このリポジトリには複数のバージョンが混在しています：
-
-### 🎮 UI統合版（推奨・現在のメイン）
-最新のUI統合版で、すべての設定が左パネルに統合されています。
-- **起動方法**: `./start_server.sh`
-- **主要ファイル**:
-  - `frontend/index.html` - 統合UI
-  - `frontend/unified-ui.css` / `unified-settings.js` - 統合UI用スタイル
-  - `frontend/modern-app.js` - アプリケーションロジック
-  - `backend/server.py` - メインサーバー
-- **特徴**:
-  - レトロゲーム風テンプレート（ファミコン、スーファミ、ゲームボーイ、アーケード）
-  - アコーディオン式設定パネル
-  - 品質プリセット機能
-  - 日本語プロンプト処理
-
-### 📦 改善版（別実装）
-別のアプローチで実装されたバージョンです。
-- **主要ファイル**:
-  - `frontend/index-improved-v2.html`
-  - `frontend/app-improved.js` / `style-improved.css`
-  - `backend/server_optimized_v2.py`
-- **特徴**: パフォーマンス最適化に特化
-
-### 🖥️ デスクトップアプリ版
-macOS用のアプリケーションラッパーです。
-- `create_app.sh` - Web版用Appラッパー
-- `create_app_desktop.sh` - Pygame版用Appラッパー
-- `create_smart_app.sh` - 自動検出版
-
-詳細は各ドキュメント（`APP_GUIDE.md`、`IMPROVEMENTS.md`）を参照してください。
 - [Onodofthenorth](https://huggingface.co/Onodofthenorth) - SD_PixelArt_SpriteSheet_Generator
 - [Apple](https://developer.apple.com/) - Metal Performance Shaders

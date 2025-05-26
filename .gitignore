@@ -96,3 +96,11 @@ clipboard-test.log
 cat_computer_*.png
 cat_computer_*.gif
 pixel_art_style_test.png
+test_animation_*.gif
+
+# macOS Application bundles
+*.app/
+Pixa.app/
+Pixa Pro.app/
+Pixa Desktop.app/
+AppIcon.icns
