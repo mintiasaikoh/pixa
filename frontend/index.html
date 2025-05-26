@@ -246,6 +246,73 @@
                                     <input type="range" id="fps" class="modern-range" 
                                            min="5" max="30" value="10">
                                 </div>
+                                
+                                <!-- 差分合成最適化設定 -->
+                                <div class="optimization-settings">
+                                    <h6 class="setting-category">
+                                        <i class="fas fa-magic me-1"></i>
+                                        差分合成最適化
+                                    </h6>
+                                    
+                                    <div class="setting-item">
+                                        <label class="setting-label">
+                                            <i class="fas fa-cog me-1"></i>
+                                            アニメーションタイプ
+                                        </label>
+                                        <select id="optimized-animation-type" class="form-select">
+                                            <option value="heartbeat">ハートビート</option>
+                                            <option value="glitch_wave">グリッチウェーブ</option>
+                                            <option value="explode_reassemble">爆発・再集合</option>
+                                            <option value="pixel_rain">ピクセルレイン</option>
+                                            <option value="wave_distortion">波状歪み</option>
+                                            <option value="spiral">スパイラル</option>
+                                            <option value="split_merge">分裂・結合</option>
+                                            <option value="electric_shock">電撃エフェクト</option>
+                                            <option value="rubberband">ラバーバンド</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="setting-item">
+                                        <label class="setting-label">
+                                            <i class="fas fa-film me-1"></i>
+                                            フレーム数
+                                            <span class="setting-value" id="optimized-frame-count-value">8</span>
+                                        </label>
+                                        <input type="range" id="optimized-frame-count" class="modern-range" 
+                                               min="4" max="20" value="8">
+                                    </div>
+                                    
+                                    <div class="setting-item">
+                                        <label class="setting-label">
+                                            <i class="fas fa-compress-alt me-1"></i>
+                                            差分許容値
+                                            <span class="setting-value" id="optimization-tolerance-value">3</span>
+                                        </label>
+                                        <input type="range" id="optimization-tolerance" class="modern-range" 
+                                               min="1" max="20" value="3">
+                                    </div>
+                                    
+                                    <div class="setting-item">
+                                        <label class="setting-label">
+                                            <i class="fas fa-clock me-1"></i>
+                                            フレーム間隔 (ms)
+                                            <span class="setting-value" id="animation-duration-value">100</span>
+                                        </label>
+                                        <input type="range" id="animation-duration" class="modern-range" 
+                                               min="50" max="500" value="100">
+                                    </div>
+                                    
+                                    <div class="optimization-actions">
+                                        <button class="btn btn-primary btn-sm" id="single-optimized-gif-btn">
+                                            <i class="fas fa-magic me-1"></i>
+                                            最適化GIF生成
+                                        </button>
+                                        <button class="btn btn-outline-primary btn-sm" id="batch-optimized-gif-btn-settings">
+                                            <i class="fas fa-layer-group me-1"></i>
+                                            一括生成
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -433,6 +500,12 @@
                         </button>
                         <button class="tool-btn" id="share-btn" title="共有" disabled>
                             <i class="fas fa-share-alt"></i>
+                        </button>
+                        <button class="tool-btn special" id="optimized-gif-btn" title="差分合成最適化GIF" disabled>
+                            <i class="fas fa-magic"></i>
+                        </button>
+                        <button class="tool-btn special" id="batch-optimized-gif-btn" title="一括最適化GIF生成" disabled>
+                            <i class="fas fa-layer-group"></i>
                         </button>
                     </div>
                 </div>

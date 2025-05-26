@@ -60,6 +60,20 @@ class PixaApp {
         document.getElementById('copy-btn').addEventListener('click', () => this.copyImage());
         document.getElementById('share-btn').addEventListener('click', () => this.shareImage());
         
+        // 差分合成最適化GIFボタン
+        document.getElementById('optimized-gif-btn').addEventListener('click', () => {
+            this.generateOptimizedAnimation();
+        });
+        document.getElementById('batch-optimized-gif-btn').addEventListener('click', () => {
+            this.batchGenerateOptimizedAnimations();
+        });
+        document.getElementById('single-optimized-gif-btn').addEventListener('click', () => {
+            this.generateOptimizedAnimation();
+        });
+        document.getElementById('batch-optimized-gif-btn-settings').addEventListener('click', () => {
+            this.batchGenerateOptimizedAnimations();
+        });
+        
         // レンジスライダー更新
         document.querySelectorAll('input[type="range"]').forEach(range => {
             range.addEventListener('input', (e) => {
@@ -288,6 +302,201 @@ class PixaApp {
         document.getElementById('save-btn').disabled = !hasImage;
         document.getElementById('copy-btn').disabled = !hasImage;
         document.getElementById('share-btn').disabled = !hasImage;
+        document.getElementById('optimized-gif-btn').disabled = !hasImage;
+        document.getElementById('batch-optimized-gif-btn').disabled = !hasImage;
+        document.getElementById('single-optimized-gif-btn').disabled = !hasImage;
+        document.getElementById('batch-optimized-gif-btn-settings').disabled = !hasImage;
+    }
+
+    // 差分合成最適化GIF生成
+    async generateOptimizedAnimation() {
+        if (this.isGenerating) return;
+        
+        if (!this.currentImage) {
+            this.showToast('まず画像を生成してください', 'error');
+            return;
+        }
+        
+        this.isGenerating = true;
+        this.setGeneratingState(true);
+        
+        try {
+            const animationType = document.getElementById('optimized-animation-type')?.value || 'heartbeat';
+            const frameCount = parseInt(document.getElementById('optimized-frame-count')?.value || 8);
+            const tolerance = parseInt(document.getElementById('optimization-tolerance')?.value || 3);
+            const duration = parseInt(document.getElementById('animation-duration')?.value || 100);
+            
+            const params = {
+                existing_image: this.currentImage,
+                animation_type: animationType,
+                frame_count: frameCount,
+                pixel_size: parseInt(document.getElementById('pixel-size')?.value || 8),
+                palette_size: parseInt(document.getElementById('palette-size')?.value || 16),
+                tolerance: tolerance,
+                duration: duration
+            };
+            
+            // 進行状況のシミュレーション
+            this.simulateProgress();
+            
+            const response = await fetch('http://localhost:5001/generate_optimized_animation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(params)
+            });
+            
+            if (!response.ok) {
+                throw new Error('最適化GIF生成に失敗しました');
+            }
+            
+            const data = await response.json();
+            console.log('Optimized Animation Response:', data);
+            
+            if (data.success) {
+                this.displayImage(data.image);
+                this.addToHistory(data.image, 'optimized-animation');
+                
+                const sizeInfo = data.file_size_kb ? ` (${data.file_size_kb}KB)` : '';
+                this.showToast(`差分合成最適化GIF生成完了！${sizeInfo}`, 'success');
+            } else {
+                throw new Error(data.error || '最適化GIF生成に失敗しました');
+            }
+            
+        } catch (error) {
+            console.error('Optimized Animation error:', error);
+            this.showToast('エラーが発生しました: ' + error.message, 'error');
+        } finally {
+            this.isGenerating = false;
+            this.setGeneratingState(false);
+        }
+    }
+
+    // 一括最適化GIF生成
+    async batchGenerateOptimizedAnimations() {
+        if (this.isGenerating) return;
+        
+        if (!this.currentImage) {
+            this.showToast('まず画像を生成してください', 'error');
+            return;
+        }
+        
+        this.isGenerating = true;
+        this.setGeneratingState(true);
+        
+        try {
+            const params = {
+                existing_image: this.currentImage,
+                pixel_size: parseInt(document.getElementById('pixel-size')?.value || 8),
+                palette_size: parseInt(document.getElementById('palette-size')?.value || 16)
+            };
+            
+            const response = await fetch('http://localhost:5001/batch_generate_optimized_animations', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(params)
+            });
+            
+            if (!response.ok) {
+                throw new Error('一括最適化GIF生成に失敗しました');
+            }
+            
+            const data = await response.json();
+            console.log('Batch Optimized Animations Response:', data);
+            
+            if (data.success) {
+                this.showBatchAnimationResults(data);
+                const stats = data.statistics;
+                this.showToast(
+                    `一括生成完了！ ${stats.success_count}/${stats.total_count} アニメーション (合計${stats.total_size_kb}KB)`,
+                    'success'
+                );
+            } else {
+                throw new Error(data.error || '一括最適化GIF生成に失敗しました');
+            }
+            
+        } catch (error) {
+            console.error('Batch Optimized Animations error:', error);
+            this.showToast('エラーが発生しました: ' + error.message, 'error');
+        } finally {
+            this.isGenerating = false;
+            this.setGeneratingState(false);
+        }
+    }
+
+    // 一括アニメーション結果の表示
+    showBatchAnimationResults(data) {
+        const modal = document.createElement('div');
+        modal.className = 'batch-results-modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>一括最適化GIF生成結果</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="batch-stats">
+                        <p>成功: ${data.statistics.success_count}/${data.statistics.total_count}</p>
+                        <p>合計サイズ: ${data.statistics.total_size_kb}KB</p>
+                        <p>平均サイズ: ${data.statistics.average_size_kb}KB</p>
+                    </div>
+                    <div class="animation-grid">
+                        ${Object.entries(data.animations).map(([type, result]) => {
+                            if (result.success) {
+                                return `
+                                    <div class="animation-result">
+                                        <div class="animation-preview">
+                                            <img src="${result.image}" alt="${type}" />
+                                        </div>
+                                        <div class="animation-info">
+                                            <h4>${type}</h4>
+                                            <p>${result.file_size_kb}KB</p>
+                                            <button class="btn-secondary" onclick="pixaApp.useAnimation('${result.image}')">使用</button>
+                                        </div>
+                                    </div>
+                                `;
+                            } else {
+                                return `
+                                    <div class="animation-result error">
+                                        <h4>${type}</h4>
+                                        <p class="error-text">${result.error}</p>
+                                    </div>
+                                `;
+                            }
+                        }).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // モーダルを閉じる
+        const closeBtn = modal.querySelector('.modal-close');
+        closeBtn.addEventListener('click', () => {
+            document.body.removeChild(modal);
+        });
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+            }
+        });
+    }
+
+    // アニメーションを使用
+    useAnimation(imageData) {
+        this.displayImage(imageData);
+        this.addToHistory(imageData, 'optimized-animation');
+        this.showToast('アニメーションが設定されました', 'success');
+        
+        const modal = document.querySelector('.batch-results-modal');
+        if (modal) {
+            document.body.removeChild(modal);
+        }
     }
     
     displayImage(imageData) {

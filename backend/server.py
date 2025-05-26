@@ -23,6 +23,11 @@ import math
 import gc  # 最適化: メモリ管理用
 import random  # グリッチアート生成用
 from glitch_art_generator import GlitchArtGenerator  # グリッチアート生成用
+from creative_animations import (
+    create_and_save_optimized_animation, 
+    batch_create_optimized_animations,
+    create_creative_animation_frames
+)  # 差分合成最適化GIF生成用
 
 # 最適化: M2 Pro用設定
 ENABLE_OPTIMIZATIONS = True
@@ -1131,6 +1136,315 @@ def animate_existing_image():
         
     except Exception as e:
         logger.error(f"Animation from existing image error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/generate_optimized_animation', methods=['POST'])
+def generate_optimized_animation():
+    """
+    差分合成最適化GIFを生成するエンドポイント
+    """
+    try:
+        data = request.json
+        
+        # 既存画像を使用する場合
+        existing_image_data = data.get('existing_image')
+        if existing_image_data:
+            # Base64デコード
+            if ',' in existing_image_data:
+                existing_image_data = existing_image_data.split(',')[1]
+            
+            image_bytes = base64.b64decode(existing_image_data)
+            base_image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+            
+            # パラメータ取得
+            animation_type = data.get('animation_type', 'heartbeat')
+            frame_count = min(max(data.get('frame_count', 8), 2), 20)
+            pixel_size = min(max(data.get('pixel_size', 8), 2), 20)
+            palette_size = min(max(data.get('palette_size', 16), 4), 64)
+            tolerance = min(max(data.get('tolerance', 3), 1), 20)
+            duration_ms = min(max(data.get('duration', 100), 50), 1000)
+            
+            logger.info(f"Generating optimized animation: type={animation_type}, frames={frame_count}, tolerance={tolerance}")
+            
+            # 一時ファイルパス
+            temp_filename = f"temp_optimized_{animation_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.gif"
+            temp_path = os.path.join(os.getcwd(), temp_filename)
+            
+            try:
+                # 差分合成最適化GIF生成
+                frames, saved_path = create_and_save_optimized_animation(
+                    base_image=base_image,
+                    animation_type=animation_type,
+                    frame_count=frame_count,
+                    pixel_size=pixel_size,
+                    palette_size=palette_size,
+                    output_path=temp_path,
+                    duration=duration_ms,
+                    tolerance=tolerance
+                )
+                
+                # GIFファイルを読み込んでBase64エンコード
+                if os.path.exists(temp_path):
+                    with open(temp_path, 'rb') as f:
+                        gif_data = f.read()
+                    
+                    gif_base64 = base64.b64encode(gif_data).decode('utf-8')
+                    file_size = len(gif_data)
+                    
+                    # 一時ファイル削除
+                    try:
+                        os.remove(temp_path)
+                    except:
+                        pass
+                    
+                    return jsonify({
+                        'success': True,
+                        'image': f'data:image/gif;base64,{gif_base64}',
+                        'animation_type': animation_type,
+                        'frame_count': frame_count,
+                        'file_size': file_size,
+                        'file_size_kb': round(file_size / 1024, 1),
+                        'tolerance': tolerance,
+                        'optimized': True,
+                        'message': f'差分合成最適化GIF生成完了 ({file_size:,} bytes)'
+                    })
+                else:
+                    return jsonify({
+                        'success': False,
+                        'error': 'GIFファイルの生成に失敗しました'
+                    }), 500
+                    
+            except Exception as e:
+                # 一時ファイル削除
+                try:
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
+                except:
+                    pass
+                raise e
+                
+        else:
+            # 新規AI生成の場合（既存のgenerate_animationと同様の処理）
+            model_id = data.get('model_id', 'runwayml/stable-diffusion-v1-5')
+            if not initialize_pipeline(model_id):
+                return jsonify({'error': 'Failed to initialize model'}), 500
+            
+            if pipeline is None:
+                return jsonify({'error': 'Pipeline not initialized'}), 500
+            
+            # パラメータ取得
+            prompt = data.get('prompt', 'pixel art character')
+            animation_type = data.get('animation_type', 'heartbeat')
+            frame_count = min(max(data.get('frame_count', 8), 2), 16)
+            width = min(max(data.get('width', 512), 256), 1024)
+            height = min(max(data.get('height', 512), 256), 1024)
+            pixel_size = min(max(data.get('pixel_size', 8), 2), 20)
+            palette_size = min(max(data.get('palette_size', 16), 4), 64)
+            tolerance = min(max(data.get('tolerance', 3), 1), 20)
+            duration_ms = min(max(data.get('duration', 100), 50), 1000)
+            num_inference_steps = min(max(data.get('steps', 20), 1), 50)
+            guidance_scale = data.get('guidance_scale', 7.5)
+            negative_prompt = data.get('negative_prompt', '')
+            seed = data.get('seed', None)
+            
+            # プロンプト拡張
+            context = data.get('context', {})
+            enhanced_prompt = enhance_pixel_art_prompt(prompt, model_id, context)
+            enhanced_negative_prompt = translate_japanese_to_english(negative_prompt)
+            enhanced_negative_prompt = enhance_negative_prompt_for_model(enhanced_negative_prompt, model_id)
+            
+            # シード設定
+            if seed is not None:
+                if device == torch.device("mps"):
+                    generator = torch.Generator().manual_seed(seed)
+                else:
+                    generator = torch.Generator(device=device).manual_seed(seed)
+            else:
+                generator = None
+            
+            logger.info(f"Generating optimized animation with AI: prompt='{enhanced_prompt}', type={animation_type}")
+            
+            # AI画像生成
+            with torch.no_grad():
+                result = pipeline(
+                    prompt=enhanced_prompt,
+                    negative_prompt=enhanced_negative_prompt,
+                    width=width,
+                    height=height,
+                    num_inference_steps=num_inference_steps,
+                    guidance_scale=guidance_scale,
+                    generator=generator
+                )
+                base_image = result.images[0]
+            
+            # 一時ファイルパス
+            temp_filename = f"temp_ai_optimized_{animation_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.gif"
+            temp_path = os.path.join(os.getcwd(), temp_filename)
+            
+            try:
+                # 差分合成最適化GIF生成
+                frames, saved_path = create_and_save_optimized_animation(
+                    base_image=base_image,
+                    animation_type=animation_type,
+                    frame_count=frame_count,
+                    pixel_size=pixel_size,
+                    palette_size=palette_size,
+                    output_path=temp_path,
+                    duration=duration_ms,
+                    tolerance=tolerance
+                )
+                
+                # GIFファイルを読み込んでBase64エンコード
+                if os.path.exists(temp_path):
+                    with open(temp_path, 'rb') as f:
+                        gif_data = f.read()
+                    
+                    gif_base64 = base64.b64encode(gif_data).decode('utf-8')
+                    file_size = len(gif_data)
+                    
+                    # 一時ファイル削除
+                    try:
+                        os.remove(temp_path)
+                    except:
+                        pass
+                    
+                    return jsonify({
+                        'success': True,
+                        'image': f'data:image/gif;base64,{gif_base64}',
+                        'animation_type': animation_type,
+                        'frame_count': frame_count,
+                        'file_size': file_size,
+                        'file_size_kb': round(file_size / 1024, 1),
+                        'tolerance': tolerance,
+                        'optimized': True,
+                        'ai_generated': True,
+                        'message': f'AI生成 + 差分合成最適化GIF完了 ({file_size:,} bytes)'
+                    })
+                else:
+                    return jsonify({
+                        'success': False,
+                        'error': 'GIFファイルの生成に失敗しました'
+                    }), 500
+                    
+            except Exception as e:
+                # 一時ファイル削除
+                try:
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
+                except:
+                    pass
+                raise e
+        
+    except Exception as e:
+        logger.error(f"Optimized animation generation error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/batch_generate_optimized_animations', methods=['POST'])
+def batch_generate_optimized_animations():
+    """
+    全種類の差分合成最適化GIFを一括生成するエンドポイント
+    """
+    try:
+        data = request.json
+        existing_image_data = data.get('existing_image')
+        
+        if not existing_image_data:
+            return jsonify({
+                'success': False,
+                'error': 'existing_image is required for batch generation'
+            }), 400
+        
+        # Base64デコード
+        if ',' in existing_image_data:
+            existing_image_data = existing_image_data.split(',')[1]
+        
+        image_bytes = base64.b64decode(existing_image_data)
+        base_image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+        
+        # パラメータ取得
+        pixel_size = min(max(data.get('pixel_size', 8), 2), 20)
+        palette_size = min(max(data.get('palette_size', 16), 4), 64)
+        
+        logger.info(f"Batch generating optimized animations: pixel_size={pixel_size}, palette_size={palette_size}")
+        
+        # 一時ディレクトリ作成
+        temp_dir = f"temp_batch_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        try:
+            # 一括生成
+            results = batch_create_optimized_animations(
+                base_image=base_image,
+                output_dir=temp_dir,
+                pixel_size=pixel_size,
+                palette_size=palette_size
+            )
+            
+            # 結果をBase64エンコードして返す
+            batch_results = {}
+            total_size = 0
+            
+            for anim_type, result in results.items():
+                if result['success'] and os.path.exists(result['path']):
+                    with open(result['path'], 'rb') as f:
+                        gif_data = f.read()
+                    
+                    gif_base64 = base64.b64encode(gif_data).decode('utf-8')
+                    file_size = len(gif_data)
+                    total_size += file_size
+                    
+                    batch_results[anim_type] = {
+                        'success': True,
+                        'image': f'data:image/gif;base64,{gif_base64}',
+                        'file_size': file_size,
+                        'file_size_kb': round(file_size / 1024, 1)
+                    }
+                else:
+                    batch_results[anim_type] = {
+                        'success': False,
+                        'error': result.get('error', 'Unknown error')
+                    }
+            
+            # 一時ファイル削除
+            try:
+                import shutil
+                shutil.rmtree(temp_dir)
+            except:
+                pass
+            
+            success_count = sum(1 for r in batch_results.values() if r['success'])
+            total_count = len(batch_results)
+            
+            return jsonify({
+                'success': True,
+                'animations': batch_results,
+                'statistics': {
+                    'success_count': success_count,
+                    'total_count': total_count,
+                    'total_size': total_size,
+                    'total_size_kb': round(total_size / 1024, 1),
+                    'average_size_kb': round(total_size / 1024 / success_count, 1) if success_count > 0 else 0
+                },
+                'message': f'{success_count}/{total_count} アニメーション生成完了 (合計: {total_size:,} bytes)'
+            })
+            
+        except Exception as e:
+            # 一時ディレクトリ削除
+            try:
+                import shutil
+                shutil.rmtree(temp_dir)
+            except:
+                pass
+            raise e
+        
+    except Exception as e:
+        logger.error(f"Batch optimized animation generation error: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)

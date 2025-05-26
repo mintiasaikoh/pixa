@@ -605,3 +605,230 @@ button:disabled {
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
 }
+
+/* 差分合成最適化GIF機能のスタイル */
+.optimization-settings {
+    margin-top: 20px;
+    padding: 15px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    color: white;
+}
+
+.optimization-settings h6.setting-category {
+    color: #ffffff;
+    font-weight: 600;
+    margin-bottom: 15px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.optimization-settings .setting-label {
+    color: #f0f0f0;
+    font-size: 0.9rem;
+}
+
+.optimization-settings .setting-value {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.optimization-settings .form-select {
+    background-color: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: white;
+    backdrop-filter: blur(10px);
+}
+
+.optimization-settings .form-select option {
+    background-color: #667eea;
+    color: white;
+}
+
+.optimization-settings .modern-range {
+    background: rgba(255,255,255,0.2);
+}
+
+.optimization-settings .modern-range::-webkit-slider-thumb {
+    background: #ffffff;
+}
+
+.optimization-settings .modern-range::-moz-range-thumb {
+    background: #ffffff;
+}
+
+.optimization-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.optimization-actions .btn {
+    flex: 1;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* ツールバーの特別ボタン */
+.tool-btn.special {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.tool-btn.special::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.5s;
+}
+
+.tool-btn.special:hover::before {
+    left: 100%;
+}
+
+.tool-btn.special:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* バッチ結果モーダル */
+.batch-results-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.batch-results-modal .modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+}
+
+.batch-results-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.batch-results-modal .modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+}
+
+.batch-results-modal .modal-close:hover {
+    color: #333;
+}
+
+.batch-results-modal .modal-body {
+    padding: 20px;
+}
+
+.batch-stats {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.batch-stats p {
+    margin: 5px 0;
+    font-weight: 600;
+}
+
+.animation-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.animation-result {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    background: #f9f9f9;
+}
+
+.animation-result.error {
+    border-color: #dc3545;
+    background: #f8d7da;
+}
+
+.animation-preview img {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.animation-info h4 {
+    font-size: 1rem;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.animation-info p {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.animation-result .btn-secondary {
+    background: #6c757d;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 4px;
+    color: white;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.animation-result .btn-secondary:hover {
+    background: #5a6268;
+}
+
+.error-text {
+    color: #dc3545;
+    font-size: 0.8rem;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .optimization-actions {
+        flex-direction: column;
+    }
+    
+    .animation-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .batch-results-modal .modal-content {
+        width: 95%;
+        margin: 10px;
+    }
+}

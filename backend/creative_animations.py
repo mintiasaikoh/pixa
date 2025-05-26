@@ -1,12 +1,136 @@
 """
 Pixa - 拡張アニメーション機能
-より面白くて創造的な動きのパターン
+より面白くて創造的な動きのパターン + GIF差分合成最適化
 """
 
 import math
 import random
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps, ImageDraw
 import numpy as np
+import os
+
+import math
+import random
+from PIL import Image, ImageEnhance, ImageFilter, ImageOps, ImageDraw
+import numpy as np
+import os
+
+def create_frame_difference(previous_frame, current_frame, tolerance=5):
+    """
+    フレーム間の差分を検出し、変更のない部分を透明にする
+    
+    Args:
+        previous_frame: 前のフレーム（PIL Image）
+        current_frame: 現在のフレーム（PIL Image）
+        tolerance: 色の違いの許容値（0-255）
+    
+    Returns:
+        透明化された差分フレーム（RGBA）
+    """
+    if previous_frame is None:
+        # 最初のフレームはそのまま返す（RGBのまま）
+        return current_frame.convert('RGB')
+    
+    # RGBに変換して比較
+    prev_rgb = previous_frame.convert('RGB')
+    curr_rgb = current_frame.convert('RGB')
+    
+    # numpy配列に変換
+    prev_array = np.array(prev_rgb)
+    curr_array = np.array(curr_rgb)
+    
+    # ピクセル単位での差分を計算
+    diff = np.abs(prev_array.astype(int) - curr_array.astype(int))
+    pixel_diff = np.max(diff, axis=2)  # RGB最大差分
+    
+    # 変化が小さいピクセルは前のフレームのピクセルを使用
+    # これによりGIFの差分圧縮が効果的に機能する
+    result_array = curr_array.copy()
+    unchanged_mask = pixel_diff <= tolerance
+    result_array[unchanged_mask] = prev_array[unchanged_mask]
+    
+    return Image.fromarray(result_array.astype('uint8'), 'RGB')
+
+def optimize_gif_frames(frames, tolerance=3):
+    """
+    フレームリストを差分合成用に最適化
+    より効果的な差分検出とフレーム最適化
+    
+    Args:
+        frames: フレームのリスト
+        tolerance: 差分検出の許容値（小さいほど厳密）
+    
+    Returns:
+        最適化されたフレームリスト
+    """
+    if not frames:
+        return []
+    
+    optimized_frames = []
+    previous_frame = None
+    
+    for i, frame in enumerate(frames):
+        # 全てRGBに統一
+        frame_rgb = frame.convert('RGB')
+        
+        if i == 0:
+            # 最初のフレームはそのまま
+            optimized_frames.append(frame_rgb)
+            previous_frame = frame_rgb
+        else:
+            # 差分フレームを生成（変化の少ない部分は前フレームと同じ色に）
+            diff_frame = create_frame_difference(previous_frame, frame_rgb, tolerance)
+            optimized_frames.append(diff_frame)
+            previous_frame = frame_rgb
+    
+    return optimized_frames
+
+def save_optimized_gif(frames, output_path, duration=100, loop=0, tolerance=3):
+    """
+    差分合成最適化されたGIFを保存
+    
+    Args:
+        frames: フレームのリスト
+        output_path: 出力パス
+        duration: フレーム持続時間（ms）
+        loop: ループ回数（0=無限）
+        tolerance: 差分検出の許容値
+    """
+    if not frames:
+        return
+    
+    # フレームを差分合成用に最適化
+    optimized_frames = optimize_gif_frames(frames, tolerance)
+    
+    # より効果的なGIF保存オプション
+    save_kwargs = {
+        'save_all': True,
+        'append_images': optimized_frames[1:],
+        'duration': duration,
+        'loop': loop,
+        'optimize': True,  # 重要：ファイルサイズ最適化
+        'disposal': 0,     # フレームを保持（差分に最適）
+    }
+    
+    # パレット数を制限してファイルサイズを削減
+    first_frame = optimized_frames[0]
+    if hasattr(first_frame, 'quantize'):
+        # 256色以下に制限
+        first_frame = first_frame.quantize(colors=128, method=Image.MEDIANCUT, dither=0)
+        optimized_frames = [first_frame] + [
+            frame.quantize(colors=128, method=Image.MEDIANCUT, dither=0) 
+            for frame in optimized_frames[1:]
+        ]
+        save_kwargs['palette'] = first_frame.getpalette()
+    
+    # GIFを保存
+    optimized_frames[0].save(output_path, format='GIF', **save_kwargs)
+    
+    # ファイルサイズを表示
+    if os.path.exists(output_path):
+        file_size = os.path.getsize(output_path)
+        print(f"最適化されたGIFを保存: {output_path}")
+        print(f"ファイルサイズ: {file_size:,} bytes ({file_size/1024:.1f} KB)")
 
 def create_creative_animation_frames(base_image, animation_type, frame_count, pixel_size, palette_size):
     """
@@ -312,6 +436,88 @@ def create_creative_animation_frames(base_image, animation_type, frame_count, pi
             frames.append(frame)
     
     return frames
+
+def create_and_save_optimized_animation(base_image, animation_type, frame_count=16, pixel_size=8, palette_size=16, 
+                                      output_path=None, duration=100, tolerance=10):
+    """
+    アニメーションフレームを生成し、差分合成最適化GIFとして保存
+    
+    Args:
+        base_image: ベース画像
+        animation_type: アニメーションタイプ
+        frame_count: フレーム数
+        pixel_size: ピクセルサイズ
+        palette_size: パレットサイズ
+        output_path: 出力パス（Noneの場合は自動生成）
+        duration: フレーム持続時間（ms）
+        tolerance: 差分検出の許容値
+    
+    Returns:
+        tuple: (フレームリスト, 最適化されたGIFパス)
+    """
+    # 通常のフレーム生成
+    frames = create_creative_animation_frames(base_image, animation_type, frame_count, pixel_size, palette_size)
+    
+    # 出力パスの自動生成
+    if output_path is None:
+        output_path = f"optimized_animation_{animation_type}.gif"
+    
+    # 差分合成最適化GIFとして保存
+    save_optimized_gif(frames, output_path, duration, loop=0, tolerance=tolerance)
+    
+    return frames, output_path
+
+def batch_create_optimized_animations(base_image, output_dir="./", pixel_size=8, palette_size=16):
+    """
+    全種類のアニメーションを差分合成最適化GIFとして一括生成
+    
+    Args:
+        base_image: ベース画像
+        output_dir: 出力ディレクトリ
+        pixel_size: ピクセルサイズ
+        palette_size: パレットサイズ
+    
+    Returns:
+        dict: アニメーションタイプ別のファイルパス
+    """
+    animation_types = [
+        "glitch_wave", "explode_reassemble", "pixel_rain", "wave_distortion",
+        "heartbeat", "spiral", "split_merge", "electric_shock", "rubberband"
+    ]
+    
+    results = {}
+    
+    for anim_type in animation_types:
+        output_path = os.path.join(output_dir, f"optimized_{anim_type}.gif")
+        
+        try:
+            frames, saved_path = create_and_save_optimized_animation(
+                base_image=base_image,
+                animation_type=anim_type,
+                frame_count=16,
+                pixel_size=pixel_size,
+                palette_size=palette_size,
+                output_path=output_path,
+                duration=100,
+                tolerance=10
+            )
+            
+            results[anim_type] = {
+                'path': saved_path,
+                'frame_count': len(frames),
+                'success': True
+            }
+            print(f"✓ {anim_type}: {saved_path}")
+            
+        except Exception as e:
+            results[anim_type] = {
+                'path': None,
+                'error': str(e),
+                'success': False
+            }
+            print(f"✗ {anim_type}: エラー - {e}")
+    
+    return results
 
 
 # 既存のapply_pixel_art_processing関数のインポートが必要
