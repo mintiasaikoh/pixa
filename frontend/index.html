@@ -4,310 +4,516 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pixa - AI ピクセルアート ジェネレーター</title>
+    <link rel="icon" href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" type="image/x-icon">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="style.css" rel="stylesheet">
-    <link href="layout-fix.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="modern-ui.css" rel="stylesheet">
+    <link href="unified-ui.css" rel="stylesheet">
 </head>
-<body class="bg-dark text-light">
-    <div class="container-fluid h-100">
-        <div class="row h-100">
-            <!-- プロンプト入力エリア -->
-            <div class="col-lg-4 col-md-5 bg-secondary p-4">
-                <h1 class="h3 mb-4">
-                    <i class="fas fa-paint-brush me-2"></i>
-                    Pixa - AI ピクセルアート ジェネレーター
-                </h1>
-                
-                <!-- プロンプト入力 -->
-                <div class="mb-4">
-                    <label for="prompt" class="form-label">プロンプト</label>
-                    <textarea 
-                        id="prompt" 
-                        class="form-control" 
-                        rows="4" 
-                        placeholder="例: 可愛い猫の戦士が森にいる (日本語OK!) または a cute cat warrior in a forest"
-                        maxlength="500"></textarea>
-                    <small class="text-muted">最大500文字まで</small>
+<body>
+    <!-- メインコンテナ -->
+    <div class="main-container">
+        <!-- ヘッダー -->
+        <header class="app-header">
+            <div class="logo-section">
+                <div class="logo-icon">
+                    <i class="fas fa-paint-brush"></i>
                 </div>
-                
-                <!-- ネガティブプロンプト -->
-                <div class="mb-4">
-                    <label for="negative-prompt" class="form-label">ネガティブプロンプト</label>
-                    <textarea 
-                        id="negative-prompt" 
-                        class="form-control" 
-                        rows="2" 
-                        placeholder="例: ぼやけた, 低品質, 変な手 (日本語OK!) または blurry, low quality, bad anatomy"></textarea>
-                </div>
-                
-                <!-- モデル選択 -->
-                <div class="mb-4">
-                    <label for="model" class="form-label">
-                        <i class="fas fa-cube me-1"></i>AIモデル
-                    </label>
-                    <select id="model" class="form-select">
-                        <option value="runwayml/stable-diffusion-v1-5" selected>Stable Diffusion v1.5（標準）</option>
-                        <option value="PublicPrompts/All-In-One-Pixel-Model">All-In-One Pixel Model（推奨）🎮</option>
-                        <option value="Onodofthenorth/SD_PixelArt_SpriteSheet_Generator">スプライトシート生成（4方向）🕹️</option>
-                        <option value="kohbanye/pixel-art-style">Pixel Art Style（シンプル）🎨</option>
-                        <option value="wavymulder/Analog-Diffusion">Analog Diffusion（レトロ風）📼</option>
-                        <option value="stabilityai/stable-diffusion-xl-base-1.0+nerijs/pixel-art-xl">Pixel Art XL LoRA（高解像度）✨</option>
-                        <option value="pixelparty/pixel-party-xl">Pixel Party XL（インディーゲーム向け）🎯</option>
-                    </select>
-                    <small id="model-description" class="text-muted d-block mt-1">汎用的な画像生成モデル。ピクセルアート以外も生成可能</small>
-                </div>
-                
-                <!-- プリセット選択 -->
-                <div class="mb-4">
-                    <label for="preset" class="form-label">スタイルプリセット</label>
-                    <select id="preset" class="form-select">
-                        <option value="">カスタム</option>
-                    </select>
-                    <small id="preset-description" class="text-muted d-block mt-1"></small>
-                </div>
-                
-                <!-- パラメータ設定 -->
-                <div class="accordion mb-4" id="parametersAccordion">
-                    <div class="accordion-item bg-dark">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed bg-dark text-light" type="button" 
-                                    data-bs-toggle="collapse" data-bs-target="#parametersCollapse">
-                                詳細パラメータ
-                            </button>
-                        </h2>
-                        <div id="parametersCollapse" class="accordion-collapse collapse" 
-                             data-bs-parent="#parametersAccordion">
-                            <div class="accordion-body">
-                                <!-- 画像サイズ -->
-                                <div class="row mb-3">
-                                    <div class="col-6">
-                                        <label for="width" class="form-label">幅</label>
-                                        <select id="width" class="form-select">
-                                            <option value="256">256px</option>
-                                            <option value="512" selected>512px</option>
-                                            <option value="768">768px</option>
-                                            <option value="1024">1024px（SDXL）</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-6">
-                                        <label for="height" class="form-label">高さ</label>
-                                        <select id="height" class="form-select">
-                                            <option value="256">256px</option>
-                                            <option value="512" selected>512px</option>
-                                            <option value="768">768px</option>
-                                            <option value="1024">1024px（SDXL）</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                
-                                <!-- ピクセルサイズ -->
-                                <div class="mb-3">
-                                    <label for="pixel-size" class="form-label">
-                                        ピクセルサイズ: <span id="pixel-size-value">8</span>
-                                    </label>
-                                    <input type="range" id="pixel-size" class="form-range" 
-                                           min="2" max="16" value="8">
-                                    <small class="text-muted">ドットの大きさ（大きいほど粗いピクセルアート）</small>
-                                </div>
-                                
-                                <!-- パレットサイズ -->
-                                <div class="mb-3">
-                                    <label for="palette-size" class="form-label">
-                                        カラーパレット: <span id="palette-size-value">16</span>色
-                                    </label>
-                                    <input type="range" id="palette-size" class="form-range" 
-                                           min="4" max="64" value="16">
-                                    <small class="text-muted">使用する色数（少ないほどレトロな雰囲気）</small>
-                                </div>
-                                
-                                <!-- ステップ数 -->
-                                <div class="mb-3">
-                                    <label for="steps" class="form-label">
-                                        ステップ数: <span id="steps-value">20</span>
-                                    </label>
-                                    <input type="range" id="steps" class="form-range" 
-                                           min="10" max="50" value="20">
-                                    <small class="text-muted">生成の詳細度（多いほど高品質だが時間がかかる）</small>
-                                </div>
-                                
-                                <!-- ガイダンススケール -->
-                                <div class="mb-3">
-                                    <label for="guidance" class="form-label">
-                                        ガイダンス: <span id="guidance-value">7.5</span>
-                                    </label>
-                                    <input type="range" id="guidance" class="form-range" 
-                                           min="1" max="20" step="0.5" value="7.5">
-                                    <small class="text-muted">プロンプトへの忠実度（高いほどプロンプトに従う）</small>
-                                </div>
-                                
-                                <!-- シード値 -->
-                                <div class="mb-3">
-                                    <label for="seed" class="form-label">シード値（空白でランダム）</label>
-                                    <input type="number" id="seed" class="form-control" 
-                                           placeholder="例: 42">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- 生成ボタン -->
-                <button id="generate-btn" class="btn btn-primary w-100 mb-3">
-                    <i class="fas fa-magic me-2"></i>
-                    ピクセルアートを生成
-                </button>
-                
-                <!-- 4方向スプライトシート生成ボタン（特定モデル選択時のみ表示） -->
-                <button id="generate-sprite-sheet-btn" class="btn btn-success w-100 mb-3">
-                    <i class="fas fa-th me-2"></i>
-                    4方向スプライトシートを生成
-                </button>
-                
-                <!-- プログレスバー -->
-                <div id="progress-container" class="mb-3" style="display: none;">
-                    <div class="progress">
-                        <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" 
-                             role="progressbar" style="width: 0%"></div>
-                    </div>
-                    <small id="progress-text" class="text-muted">生成中...</small>
-                </div>
-                
-                <!-- アニメーション設定 -->
-                <div class="accordion mb-3" id="animationAccordion">
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="animationHeading">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#animationCollapse" aria-expanded="false" aria-controls="animationCollapse">
-                                <i class="fas fa-film me-2"></i>アニメーション設定
-                            </button>
-                        </h2>
-                        <div id="animationCollapse" class="accordion-collapse collapse" aria-labelledby="animationHeading" data-bs-parent="#animationAccordion">
-                            <div class="accordion-body">
-                                <!-- 説明テキスト -->
-                                <div class="alert alert-info mb-3">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    静止画を生成後「アニメーション化」ボタンを押すと、その画像を動かせます
-                                </div>
-                                
-                                <!-- 現在の画像状態 -->
-                                <div id="animation-status" class="alert alert-secondary mb-3" style="display: none;">
-                                    <i class="fas fa-image me-1"></i>
-                                    <span id="animation-status-text">選択された画像をアニメーション化します</span>
-                                </div>
-                                
-                                <!-- アニメーションタイプ -->
-                                <div class="mb-3">
-                                    <label for="animation-type" class="form-label">動きのタイプ</label>
-                                    <select id="animation-type" class="form-select">
-                                        <option value="idle">ゆらゆら（待機モーション）</option>
-                                        <option value="walk">ぴょんぴょん（歩くような動き）</option>
-                                        <option value="bounce">ジャンプ（弾むような動き）</option>
-                                        <option value="glow">キラキラ（光る効果）</option>
-                                        <option value="rotate">くるくる（回転）</option>
-                                    </select>
-                                </div>
-                                
-                                <!-- フレーム数 -->
-                                <div class="mb-3">
-                                    <label for="frame-count" class="form-label">
-                                        動きの滑らかさ: <span id="frame-count-value">4</span>コマ
-                                    </label>
-                                    <input type="range" id="frame-count" class="form-range" 
-                                           min="2" max="16" value="4">
-                                    <small class="text-muted">多いほど滑らか（ファイルサイズ大）</small>
-                                </div>
-                                
-                                <!-- FPS -->
-                                <div class="mb-3">
-                                    <label for="fps" class="form-label">
-                                        動きの速さ: <span id="fps-value">10</span>
-                                    </label>
-                                    <input type="range" id="fps" class="form-range" 
-                                           min="5" max="30" value="10">
-                                    <small class="text-muted">5=ゆっくり ← → 30=速い</small>
-                                </div>
-                                
-                                <!-- アニメーション生成ボタン -->
-                                <button id="generate-animation-btn" class="btn btn-warning w-100 mb-2">
-                                    <i class="fas fa-play-circle me-2"></i>
-                                    アニメーションを生成
-                                </button>
-                                
-                                <!-- 新しい画像を生成ボタン -->
-                                <button id="new-image-btn" class="btn btn-secondary w-100" style="display: none;">
-                                    <i class="fas fa-redo me-2"></i>
-                                    新しい静止画を生成する
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- クイックプロンプト -->
-                <div class="mb-3">
-                    <label class="form-label">クイックプロンプト</label>
-                    <div class="d-flex flex-wrap gap-2">
-                        <button class="btn btn-outline-light btn-sm quick-prompt" 
-                                data-prompt="勇敢な騎士">騎士</button>
-                        <button class="btn btn-outline-light btn-sm quick-prompt" 
-                                data-prompt="魔法使いが呪文を唱えている">魔法使い</button>
-                        <button class="btn btn-outline-light btn-sm quick-prompt" 
-                                data-prompt="可愛いドラゴンが寝ている">ドラゴン</button>
-                        <button class="btn btn-outline-light btn-sm quick-prompt" 
-                                data-prompt="神秘的な森の城">城</button>
-                        <button class="btn btn-outline-light btn-sm quick-prompt" 
-                                data-prompt="星空の宇宙船">宇宙船</button>
-                        <button class="btn btn-outline-light btn-sm quick-prompt" 
-                                data-prompt="忍者が月夜に飛んでいる">忍者</button>
-                        <button class="btn btn-outline-light btn-sm quick-prompt" 
-                                data-prompt="青い海の美しい人魚">人魚</button>
-                        <button class="btn btn-outline-light btn-sm quick-prompt" 
-                                data-prompt="赤い花畑を走る白い馬">馬</button>
-                    </div>
-                </div>
+                <h1 class="logo-text">Pixa</h1>
+                <span class="version-badge">v2.0</span>
             </div>
             
-            <!-- 生成結果表示エリア -->
-            <div class="col-lg-8 col-md-7 d-flex flex-column">
-                <div class="p-4 d-flex flex-column" style="height: 100%; overflow-y: auto;">
-                    <!-- 結果画像表示 -->
-                    <div id="result-container" class="d-flex align-items-center justify-content-center bg-black rounded border" style="min-height: 400px;">
-                        <div id="placeholder" class="text-center text-muted">
-                            <i class="fas fa-image fa-5x mb-3"></i>
-                            <p class="h5">プロンプトを入力して「生成」ボタンを押してください</p>
+            <!-- モード切り替えタブ -->
+            <div class="mode-tabs">
+                <button class="mode-tab active" data-mode="pixel-art">
+                    <i class="fas fa-th"></i>
+                    <span>ピクセルアート</span>
+                </button>
+                <button class="mode-tab" data-mode="glitch-art">
+                    <i class="fas fa-bolt"></i>
+                    <span>グリッチアート</span>
+                </button>
+                <button class="mode-tab" data-mode="animation">
+                    <i class="fas fa-film"></i>
+                    <span>アニメーション</span>
+                </button>
+            </div>
+            
+            <!-- ヘッダーアクション -->
+            <div class="header-actions">
+                <button class="icon-btn" id="history-btn" title="履歴">
+                    <i class="fas fa-history"></i>
+                </button>
+                <button class="icon-btn" id="fullscreen-btn" title="フルスクリーン">
+                    <i class="fas fa-expand"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <main class="app-main">
+            <!-- 左サイドパネル（プロンプト入力） -->
+            <aside class="side-panel left-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">
+                        <i class="fas fa-magic me-2"></i>
+                        生成設定
+                    </h2>
+                    <button class="panel-toggle" title="パネルを折りたたむ">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                </div>
+                
+                <div class="panel-content">
+                    <!-- 基本設定セクション（常時表示） -->
+                    <section class="basic-settings">
+                        <!-- クイックプロンプト -->
+                        <div class="quick-prompts mb-3">
+                            <label class="small text-muted mb-2 d-block">レトロゲーム風スタイル</label>
+                            <div class="quick-prompt-chips">
+                                <button class="chip" data-prompt="ファミコン風8ビットピクセルアート、シンプルな色使い">🎮 ファミコン風</button>
+                                <button class="chip" data-prompt="スーパーファミコン風16ビットピクセルアート、鮮やかな色彩">🌟 スーファミ風</button>
+                                <button class="chip" data-prompt="ゲームボーイ風モノクロ4階調ピクセルアート、緑がかった画面">🟩 ゲームボーイ風</button>
+                                <button class="chip" data-prompt="アーケードゲーム風ピクセルアート、ネオンカラー、レトロフューチャー">🕹️ アーケード風</button>
+                            </div>
                         </div>
-                        <img id="result-image" style="display: none;" class="img-fluid" alt="Generated pixel art">
-                    </div>
                     
-                    <!-- 画像操作ボタン -->
-                    <div id="image-controls" class="mt-3" style="display: none;">
-                        <div class="d-flex flex-wrap justify-content-between align-items-start">
-                            <div class="mb-2">
-                                <button id="download-btn" class="btn btn-success me-2 mb-2">
-                                    <i class="fas fa-download me-1"></i>ダウンロード
+                    <!-- メインプロンプト -->
+                    <div class="prompt-section mb-3">
+                        <label for="prompt" class="form-label">
+                            <i class="fas fa-feather-alt me-1"></i>
+                            プロンプト
+                            <span class="char-counter">
+                                <span id="prompt-length">0</span>/500
+                            </span>
+                        </label>
+                        <div class="prompt-input-wrapper">
+                            <textarea 
+                                id="prompt" 
+                                class="form-control prompt-textarea" 
+                                rows="4" 
+                                placeholder="作りたいものを自由に入力...&#10;例: 夕焼けの中を飛ぶドラゴン"
+                                maxlength="500"></textarea>
+                            <div class="prompt-actions">
+                                <button class="small-icon-btn" id="clear-prompt" title="クリア">
+                                    <i class="fas fa-times"></i>
                                 </button>
-                                <button id="copy-btn" class="btn btn-info me-2 mb-2">
-                                    <i class="fas fa-copy me-1"></i>コピー
-                                </button>
-                                <button id="animate-btn" class="btn btn-primary me-2 mb-2">
-                                    <i class="fas fa-play-circle me-1"></i>アニメ化
-                                </button>
-                                <button id="download-gif-btn" class="btn btn-warning me-2 mb-2" style="display: none;">
-                                    <i class="fas fa-file-video me-1"></i>GIF保存
+                                <button class="small-icon-btn" id="magic-enhance" title="AI強化">
+                                    <i class="fas fa-sparkles"></i>
                                 </button>
                             </div>
-                            <div id="generation-info" class="text-muted small text-end"></div>
                         </div>
-                        <small class="text-muted d-block mt-1">
-                            💡 右クリック→「画像を保存」でも保存できます
-                        </small>
+                    </div>
+                    
+                    <!-- モデル選択 -->
+                    <div class="model-section mb-3">
+                        <label for="model" class="form-label">
+                            <i class="fas fa-cube me-1"></i>
+                            AIモデル
+                        </label>
+                        <select id="model" class="form-control">
+                            <option value="PublicPrompts/All-In-One-Pixel-Model">All-In-One Pixel Model (推奨)</option>
+                            <option value="runwayml/stable-diffusion-v1-5">Stable Diffusion v1.5</option>
+                            <option value="stabilityai/stable-diffusion-2-1">Stable Diffusion 2.1</option>
+                            <option value="kohbanye/pixel-art-style">Pixel Art Style</option>
+                        </select>
+                    </div>
+                    </section>
+
+                    <!-- モード別スタイル設定（アコーディオン） -->
+                    <section class="accordion-section" id="style-settings">
+                        <button class="accordion-header active" data-target="style-panel">
+                            <i class="fas fa-palette me-2"></i>
+                            <span id="mode-style-title">ピクセルアートスタイル</span>
+                            <i class="fas fa-chevron-down ms-auto"></i>
+                        </button>
+                        <div class="accordion-panel show" id="style-panel">
+                            <!-- ピクセルアート用スタイル -->
+                            <div class="mode-style-settings" id="pixel-style-settings">
+                                <div class="setting-item">
+                                    <label class="setting-label">
+                                        <i class="fas fa-th me-1"></i>
+                                        ピクセルサイズ
+                                        <span class="setting-value" id="pixel-size-value">8</span>px
+                                    </label>
+                                    <input type="range" id="pixel-size" class="modern-range" 
+                                           min="2" max="16" value="8">
+                                    <div class="range-labels">
+                                        <span>細かい</span>
+                                        <span>粗い</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <label class="setting-label">
+                                        <i class="fas fa-swatchbook me-1"></i>
+                                        カラーパレット
+                                        <span class="setting-value" id="palette-size-value">16</span>色
+                                    </label>
+                                    <input type="range" id="palette-size" class="modern-range" 
+                                           min="2" max="64" value="16">
+                                    <div class="range-labels">
+                                        <span>シンプル</span>
+                                        <span>リッチ</span>
+                                    </div>
+                                </div>
+
+                                <div class="setting-item">
+                                    <label class="setting-label">
+                                        <i class="fas fa-border-style me-1"></i>
+                                        アウトライン
+                                    </label>
+                                    <div class="toggle-switch">
+                                        <input type="checkbox" id="outline-toggle" checked>
+                                        <label for="outline-toggle" class="toggle-label"></label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- グリッチアート用スタイル（非表示） -->
+                            <div class="mode-style-settings" id="glitch-style-settings" style="display: none;">
+                                <div class="glitch-presets mb-3">
+                                    <label class="small text-muted mb-2 d-block">プリセット</label>
+                                    <div class="preset-buttons">
+                                        <button class="preset-btn" data-preset="digital">デジタル</button>
+                                        <button class="preset-btn" data-preset="vaporwave">ヴェイパー</button>
+                                        <button class="preset-btn" data-preset="cyberpunk">サイバー</button>
+                                        <button class="preset-btn" data-preset="corrupted">破損</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <label class="setting-label">
+                                        <i class="fas fa-bolt me-1"></i>
+                                        グリッチ強度
+                                        <span class="setting-value" id="glitch-intensity-value">50</span>%
+                                    </label>
+                                    <input type="range" id="glitch-intensity" class="modern-range" 
+                                           min="0" max="100" value="50">
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <label class="setting-label">
+                                        <i class="fas fa-th me-1"></i>
+                                        ピクセルサイズ
+                                        <span class="setting-value" id="glitch-pixel-size-value">4</span>px
+                                    </label>
+                                    <input type="range" id="glitch-pixel-size" class="modern-range" 
+                                           min="2" max="16" value="4">
+                                </div>
+                            </div>
+
+                            <!-- アニメーション用スタイル（非表示） -->
+                            <div class="mode-style-settings" id="animation-style-settings" style="display: none;">
+                                <div class="animation-types mb-3">
+                                    <label class="small text-muted mb-2 d-block">アニメーションタイプ</label>
+                                    <div class="animation-type-cards">
+                                        <div class="animation-type-card selected" data-type="idle">
+                                            <i class="fas fa-water"></i>
+                                            <span>ゆらゆら</span>
+                                        </div>
+                                        <div class="animation-type-card" data-type="walk">
+                                            <i class="fas fa-walking"></i>
+                                            <span>歩く</span>
+                                        </div>
+                                        <div class="animation-type-card" data-type="bounce">
+                                            <i class="fas fa-basketball-ball"></i>
+                                            <span>弾む</span>
+                                        </div>
+                                        <div class="animation-type-card" data-type="glitch_wave">
+                                            <i class="fas fa-wave-square"></i>
+                                            <span>グリッチ波</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <label class="setting-label">
+                                        <i class="fas fa-film me-1"></i>
+                                        フレーム数
+                                        <span class="setting-value" id="frame-count-value">8</span>
+                                    </label>
+                                    <input type="range" id="frame-count" class="modern-range" 
+                                           min="2" max="16" value="8">
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <label class="setting-label">
+                                        <i class="fas fa-tachometer-alt me-1"></i>
+                                        速度 (FPS)
+                                        <span class="setting-value" id="fps-value">10</span>
+                                    </label>
+                                    <input type="range" id="fps" class="modern-range" 
+                                           min="5" max="30" value="10">
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 生成品質設定（アコーディオン） -->
+                    <section class="accordion-section">
+                        <button class="accordion-header" data-target="quality-panel">
+                            <i class="fas fa-cog me-2"></i>
+                            生成品質
+                            <span class="quality-badge">標準</span>
+                            <i class="fas fa-chevron-down ms-auto"></i>
+                        </button>
+                        <div class="accordion-panel" id="quality-panel">
+                            <!-- プリセット選択 -->
+                            <div class="quality-presets mb-3">
+                                <label class="small text-muted mb-2 d-block">品質プリセット</label>
+                                <div class="preset-buttons">
+                                    <button class="preset-btn" data-preset="fast" title="数秒で生成・プレビュー向け">
+                                        <i class="fas fa-bolt"></i>
+                                        高速
+                                    </button>
+                                    <button class="preset-btn active" data-preset="standard" title="バランスの良い設定">
+                                        <i class="fas fa-balance-scale"></i>
+                                        標準
+                                    </button>
+                                    <button class="preset-btn" data-preset="quality" title="最高品質・時間がかかります">
+                                        <i class="fas fa-gem"></i>
+                                        高品質
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 詳細設定 -->
+                            <div class="advanced-settings">
+                                <div class="setting-item">
+                                    <label class="setting-label">
+                                        <i class="fas fa-layer-group me-1"></i>
+                                        生成ステップ数
+                                        <span class="setting-value" id="steps-value">20</span>
+                                        <button class="info-btn" title="多いほど品質が向上しますが、生成時間も長くなります">
+                                            <i class="fas fa-info-circle"></i>
+                                        </button>
+                                    </label>
+                                    <input type="range" id="steps" class="modern-range" 
+                                           min="10" max="50" value="20">
+                                    <div class="range-labels">
+                                        <span>高速</span>
+                                        <span>高品質</span>
+                                    </div>
+                                </div>
+
+                                <div class="setting-item">
+                                    <label class="setting-label">
+                                        <i class="fas fa-sliders-h me-1"></i>
+                                        プロンプト強度
+                                        <span class="setting-value" id="cfg-scale-value">7.0</span>
+                                        <button class="info-btn" title="プロンプトへの忠実度を調整します">
+                                            <i class="fas fa-info-circle"></i>
+                                        </button>
+                                    </label>
+                                    <input type="range" id="cfg-scale" class="modern-range" 
+                                           min="1" max="20" value="7" step="0.5">
+                                    <div class="range-labels">
+                                        <span>創造的</span>
+                                        <span>正確</span>
+                                    </div>
+                                </div>
+
+                                <div class="setting-item">
+                                    <label for="seed" class="setting-label">
+                                        <i class="fas fa-dice me-1"></i>
+                                        シード値
+                                        <button class="info-btn" title="同じシード値で同じ結果を再現できます">
+                                            <i class="fas fa-info-circle"></i>
+                                        </button>
+                                    </label>
+                                    <div class="seed-input-group">
+                                        <input type="number" id="seed" class="form-control" value="-1" min="-1">
+                                        <button class="random-seed-btn" title="ランダム">
+                                            <i class="fas fa-random"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">-1でランダム生成</small>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- その他オプション（アコーディオン） -->
+                    <section class="accordion-section">
+                        <button class="accordion-header" data-target="options-panel">
+                            <i class="fas fa-ellipsis-h me-2"></i>
+                            その他のオプション
+                            <i class="fas fa-chevron-down ms-auto"></i>
+                        </button>
+                        <div class="accordion-panel" id="options-panel">
+                            <!-- ネガティブプロンプト -->
+                            <div class="setting-item">
+                                <label for="negative-prompt" class="form-label">
+                                    <i class="fas fa-ban me-1"></i>
+                                    ネガティブプロンプト
+                                    <button class="info-btn" title="生成から除外したい要素を指定します">
+                                        <i class="fas fa-info-circle"></i>
+                                    </button>
+                                </label>
+                                <textarea 
+                                    id="negative-prompt" 
+                                    class="form-control" 
+                                    rows="2" 
+                                    placeholder="除外したい要素（例: ぼやけた, 低品質, リアル）"></textarea>
+                            </div>
+
+                            <!-- アスペクト比 -->
+                            <div class="setting-item">
+                                <label class="setting-label">
+                                    <i class="fas fa-expand-arrows-alt me-1"></i>
+                                    アスペクト比
+                                </label>
+                                <div class="aspect-ratio-buttons">
+                                    <button class="ratio-btn active" data-ratio="1:1">
+                                        <span class="ratio-icon">◻</span>
+                                        1:1
+                                    </button>
+                                    <button class="ratio-btn" data-ratio="16:9">
+                                        <span class="ratio-icon">▭</span>
+                                        16:9
+                                    </button>
+                                    <button class="ratio-btn" data-ratio="9:16">
+                                        <span class="ratio-icon">▯</span>
+                                        9:16
+                                    </button>
+                                    <button class="ratio-btn" data-ratio="4:3">
+                                        <span class="ratio-icon">▬</span>
+                                        4:3
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <!-- 生成ボタン -->
+                    <button id="generate-btn" class="generate-button">
+                        <span class="button-content">
+                            <i class="fas fa-magic me-2"></i>
+                            生成する
+                        </span>
+                        <span class="button-loader" style="display: none;">
+                            <i class="fas fa-spinner fa-spin me-2"></i>
+                            生成中...
+                        </span>
+                    </button>
+                </div>
+            </aside>
+
+            <!-- センターエリア（画像表示） -->
+            <section class="center-area">
+                <!-- ツールバー -->
+                <div class="image-toolbar">
+                    <div class="toolbar-left">
+                        <button class="tool-btn" id="zoom-in" title="拡大">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                        <button class="tool-btn" id="zoom-out" title="縮小">
+                            <i class="fas fa-search-minus"></i>
+                        </button>
+                        <button class="tool-btn" id="zoom-fit" title="フィット">
+                            <i class="fas fa-compress"></i>
+                        </button>
+                        <span class="zoom-level">100%</span>
+                    </div>
+                    
+                    <div class="toolbar-center">
+                        <span class="image-info">
+                            <i class="fas fa-image me-1"></i>
+                            <span id="image-dimensions">画像を生成してください</span>
+                        </span>
+                    </div>
+                    
+                    <div class="toolbar-right">
+                        <button class="tool-btn" id="save-btn" title="保存" disabled>
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button class="tool-btn" id="copy-btn" title="コピー" disabled>
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <button class="tool-btn" id="share-btn" title="共有" disabled>
+                            <i class="fas fa-share-alt"></i>
+                        </button>
                     </div>
                 </div>
-            </div>
-        </div>
+                
+                <!-- 画像表示エリア -->
+                <div class="image-display-area">
+                    <div class="image-container" id="image-container">
+                        <!-- 初期状態 -->
+                        <div class="empty-state" id="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            <h3>まだ画像がありません</h3>
+                            <p>左のパネルからプロンプトを入力して生成を開始してください</p>
+                            <div class="shortcut-hint">
+                                <kbd>Ctrl</kbd> + <kbd>Enter</kbd> で素早く生成
+                            </div>
+                        </div>
+                        
+                        <!-- 生成中状態 -->
+                        <div class="generating-state" id="generating-state" style="display: none;">
+                            <div class="generating-animation">
+                                <div class="pixel-loader">
+                                    <div class="pixel"></div>
+                                    <div class="pixel"></div>
+                                    <div class="pixel"></div>
+                                    <div class="pixel"></div>
+                                </div>
+                            </div>
+                            <h3>生成中...</h3>
+                            <p id="generating-status">AIが画像を作成しています</p>
+                            <div class="progress-bar-wrapper">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="progress-fill"></div>
+                                </div>
+                                <span class="progress-text" id="progress-text">0%</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 画像表示 -->
+                        <div class="image-viewer" id="image-viewer" style="display: none;">
+                            <img id="generated-image" alt="生成された画像">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- フローティング通知 -->
+                <div class="toast-container" id="toast-container"></div>
+            </section>
+
+            <!-- 右サイドパネル（履歴） -->
+            <aside class="side-panel right-panel collapsed" id="history-panel">
+                <div class="panel-header">
+                    <button class="panel-toggle" title="パネルを開く">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <h2 class="panel-title">
+                        <i class="fas fa-history me-2"></i>
+                        生成履歴
+                    </h2>
+                </div>
+                
+                <div class="panel-content">
+                    <div class="history-filter mb-3">
+                        <button class="filter-chip active" data-filter="all">すべて</button>
+                        <button class="filter-chip" data-filter="pixel-art">ピクセル</button>
+                        <button class="filter-chip" data-filter="glitch-art">グリッチ</button>
+                        <button class="filter-chip" data-filter="animation">アニメ</button>
+                    </div>
+                    
+                    <div class="history-grid" id="history-grid">
+                        <!-- 履歴アイテムが動的に追加される -->
+                    </div>
+                </div>
+            </aside>
+        </main>
     </div>
-    
+
+    <!-- スクリプト -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="app.js"></script>
+    <script src="modern-app.js"></script>
+    <script src="unified-settings.js"></script>
 </body>
 </html>

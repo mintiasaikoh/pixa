@@ -1,0 +1,607 @@
+/* 統合UIスタイル - Pixa v2.0 */
+:root {
+    --primary-color: #5865f2;
+    --secondary-color: #eb459e;
+    --success-color: #43b581;
+    --warning-color: #faa61a;
+    --danger-color: #f04747;
+    --bg-primary: #0f0f0f;
+    --bg-secondary: #1a1a1a;
+    --bg-tertiary: #252525;
+    --text-primary: #ffffff;
+    --text-secondary: #b9bbbe;
+    --border-color: #2f2f2f;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* 左パネル - 統合設定 */
+.left-panel {
+    width: 380px;
+    background: var(--bg-secondary);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.panel-content {
+    padding: 1rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* 基本設定セクション */
+.basic-settings {
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 1rem;
+}
+
+/* アコーディオンセクション */
+.accordion-section {
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-tertiary);
+}
+
+.accordion-header {
+    width: 100%;
+    padding: 1rem;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+}
+
+.accordion-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.accordion-header.active {
+    background: rgba(88, 101, 242, 0.1);
+    color: var(--primary-color);
+}
+
+.accordion-header i.fa-chevron-down {
+    transition: transform 0.3s ease;
+    margin-left: auto;
+}
+
+.accordion-header.active i.fa-chevron-down {
+    transform: rotate(180deg);
+}
+
+.accordion-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    padding: 0 1rem;
+}
+
+.accordion-panel.show {
+    max-height: 600px;
+    padding: 0 1rem 1rem;
+}
+
+/* 品質バッジ */
+.quality-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background: rgba(67, 181, 129, 0.2);
+    color: var(--success-color);
+    border-radius: 4px;
+    font-size: 0.75rem;
+    margin-left: 0.5rem;
+}
+
+.quality-badge.warning {
+    background: rgba(250, 166, 26, 0.2);
+    color: var(--warning-color);
+}
+
+.quality-badge.primary {
+    background: rgba(88, 101, 242, 0.2);
+    color: var(--primary-color);
+}
+
+/* プリセットボタン */
+.preset-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+}
+.preset-btn {
+    padding: 0.75rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.preset-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.preset-btn.active {
+    background: rgba(88, 101, 242, 0.2);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+/* 設定アイテム */
+.setting-item {
+    margin-bottom: 1.5rem;
+}
+
+.setting-label {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.setting-value {
+    margin-left: auto;
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* インフォボタン */
+.info-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-left: 0.5rem;
+    cursor: pointer;
+    padding: 0;
+}
+
+.info-btn:hover {
+    color: var(--primary-color);
+}
+
+/* モダンレンジスライダー */
+.modern-range {
+    width: 100%;
+    height: 6px;
+    background: var(--bg-primary);
+    border-radius: 3px;
+    outline: none;
+    -webkit-appearance: none;
+    margin: 0.75rem 0;
+}
+
+.modern-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(88, 101, 242, 0.3);
+    transition: all 0.2s ease;
+}
+
+.modern-range::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 12px rgba(88, 101, 242, 0.5);
+}
+
+/* レンジラベル */
+.range-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: -0.5rem;
+}
+
+/* トグルスイッチ */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    margin-left: auto;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-label {
+    position: relative;
+    display: block;
+    width: 48px;
+    height: 24px;
+    background: var(--bg-primary);
+    border-radius: 24px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.toggle-label::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+}
+
+.toggle-switch input:checked + .toggle-label {
+    background: var(--primary-color);
+}
+
+.toggle-switch input:checked + .toggle-label::after {
+    transform: translateX(24px);
+}
+
+/* シード値入力グループ */
+.seed-input-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.seed-input-group input {
+    flex: 1;
+}
+
+.random-seed-btn {
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.random-seed-btn:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+/* アスペクト比ボタン */
+.aspect-ratio-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.ratio-btn {
+    flex: 1;
+    padding: 0.75rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.8rem;
+}
+
+.ratio-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.ratio-btn.active {
+    background: rgba(88, 101, 242, 0.2);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.ratio-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+/* 設定セクションのスタイル調整 */
+.settings-section {
+    margin-bottom: 1rem;
+}
+
+.mode-style-settings {
+    padding-top: 0.5rem;
+}
+
+/* ツールチップ */
+.tooltip {
+    position: absolute;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    box-shadow: var(--shadow);
+    z-index: 1000;
+    max-width: 250px;
+    pointer-events: none;
+}
+
+/* テンプレートカテゴリ */
+.template-categories {
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+}
+
+.template-category {
+    margin-bottom: 1rem;
+}
+
+.template-category label {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* トースト通知 */
+.toast-container {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.toast {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    box-shadow: var(--shadow);
+    transform: translateX(400px);
+    transition: transform 0.3s ease;
+    min-width: 300px;
+}
+
+.toast.show {
+    transform: translateX(0);
+}
+
+.toast-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--text-primary);
+}
+
+.toast-info {
+    border-left: 4px solid var(--primary-color);
+}
+
+.toast-info i {
+    color: var(--primary-color);
+}
+
+.toast-success {
+    border-left: 4px solid var(--success-color);
+}
+
+.toast-success i {
+    color: var(--success-color);
+}
+
+.toast-warning {
+    border-left: 4px solid var(--warning-color);
+}
+
+.toast-warning i {
+    color: var(--warning-color);
+}
+
+.toast-error {
+    border-left: 4px solid var(--danger-color);
+}
+
+.toast-error i {
+    color: var(--danger-color);
+}
+
+/* アコーディオンパネルの修正 */
+.accordion-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    padding: 0;
+}
+
+.accordion-panel.show {
+    max-height: 1000px; /* 十分な高さに設定 */
+    padding: 0 1rem 1rem;
+}
+
+/* プリセットボタンの説明 */
+.preset-btn {
+    position: relative;
+}
+
+.preset-btn:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.preset-btn:hover::after {
+    opacity: 1;
+}
+
+/* クイックプロンプトチップの改善 */
+.quick-prompt-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.chip {
+    padding: 0.4rem 0.8rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.chip:hover {
+    background: rgba(88, 101, 242, 0.1);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transform: translateY(-1px);
+}
+
+.chip:active {
+    transform: translateY(0);
+}
+
+/* ボタンの無効化スタイル */
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* デバッグ用 - アコーディオンが見えない問題の修正 */
+.accordion-section {
+    position: relative;
+    z-index: 1;
+}
+
+/* スクロールバーのスタイリング */
+.panel-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.panel-content::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+    border-radius: 4px;
+}
+
+.panel-content::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.panel-content::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+/* アニメーションタイプカード */
+.animation-type-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+}
+
+.animation-type-card {
+    padding: 0.75rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.animation-type-card:hover {
+    background: var(--bg-tertiary);
+    transform: translateY(-2px);
+}
+
+.animation-type-card.selected {
+    background: rgba(88, 101, 242, 0.2);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.animation-type-card i {
+    font-size: 1.5rem;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.animation-type-card span {
+    font-size: 0.875rem;
+}
+/* レトロゲーム風スタイルチップの特別なスタイリング */
+.quick-prompt-chips .chip[data-prompt*="ファミコン"] {
+    background: linear-gradient(135deg, #8b0000 0%, #ff0000 100%);
+    color: white;
+    border-color: #ff0000;
+}
+
+.quick-prompt-chips .chip[data-prompt*="スーパーファミコン"] {
+    background: linear-gradient(135deg, #4b0082 0%, #8a2be2 100%);
+    color: white;
+    border-color: #8a2be2;
+}
+
+.quick-prompt-chips .chip[data-prompt*="ゲームボーイ"] {
+    background: linear-gradient(135deg, #2d4a2b 0%, #8bac0f 100%);
+    color: white;
+    border-color: #8bac0f;
+}
+
+.quick-prompt-chips .chip[data-prompt*="アーケード"] {
+    background: linear-gradient(135deg, #ff1493 0%, #00ffff 100%);
+    color: white;
+    border-color: #ff1493;
+    text-shadow: 0 0 2px rgba(0,0,0,0.5);
+}
+
+.quick-prompt-chips .chip:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 4px 12px rgba(88, 101, 242, 0.3);
+}
+
+/* レトロゲーム風スタイルのラベル */
+.quick-prompts label {
+    font-weight: 600;
+    background: linear-gradient(90deg, #ff6b6b 0%, #4ecdc4 25%, #45b7d1 50%, #96ceb4 75%, #feca57 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradient-shift 3s ease infinite;
+}
+
+@keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}

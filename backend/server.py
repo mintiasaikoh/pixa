@@ -21,6 +21,8 @@ import re
 import imageio
 import math
 import gc  # 最適化: メモリ管理用
+import random  # グリッチアート生成用
+from glitch_art_generator import GlitchArtGenerator  # グリッチアート生成用
 
 # 最適化: M2 Pro用設定
 ENABLE_OPTIMIZATIONS = True
@@ -446,6 +448,38 @@ def translate_japanese_to_english(text):
         '剣': 'sword',
         '盾': 'shield',
         '魔法': 'magic',
+        
+        # テクノロジー・現代機器
+        'パソコン': 'desktop computer, PC with monitor',
+        'ノートパソコン': 'laptop computer',
+        'スマホ': 'smartphone',
+        'スマートフォン': 'smartphone',
+        'タブレット': 'tablet device',
+        'ゲーム機': 'game console',
+        'ファミコン': 'retro NES console, 8-bit',
+        'キーボード': 'computer keyboard',
+        'マウス': 'computer mouse',
+        'モニター': 'computer monitor',
+        'ヘッドホン': 'headphones',
+        'カメラ': 'camera',
+        'ロボット': 'robot',
+        
+        # 食べ物
+        'ラーメン': 'ramen noodles',
+        'すし': 'sushi',
+        '寿司': 'sushi',
+        'おにぎり': 'rice ball, onigiri',
+        'お茶': 'green tea',
+        'コーヒー': 'coffee',
+        'ケーキ': 'cake',
+        'パン': 'bread',
+        'ピザ': 'pizza',
+        
+        # ピクセルアート用語
+        'ドット絵': 'pixel art',
+        'レトロゲーム': 'retro game style',
+        '8ビット': '8-bit style',
+        '16ビット': '16-bit style',
         '宝物': 'treasure',
         '星': 'star',
         '月': 'moon',
@@ -483,7 +517,43 @@ def translate_japanese_to_english(text):
         '手が': 'hands',
         '余分な': 'extra',
         '欠けた': 'missing',
-        '重複した': 'duplicate'
+        '重複した': 'duplicate',
+        
+        # 動詞の活用形
+        'している': 'doing',
+        'する': 'do',
+        'した': 'did',
+        'ゲーム': 'game',
+        'プレイ': 'play',
+        '作業する': 'working',
+        '遊ぶ': 'playing',
+        '使う': 'using',
+        '見る': 'looking at',
+        '座る': 'sitting',
+        '立つ': 'standing',
+        '持つ': 'holding',
+    }
+    
+    # 複合語・フレーズ辞書（長いものから優先的に処理）
+    phrase_dict = {
+        # テクノロジー関連
+        'ゲーミングパソコン': 'gaming PC with RGB',
+        'ノートパソコン': 'laptop computer',
+        'デスクトップパソコン': 'desktop computer',
+        'パソコンで作業': 'working at computer',
+        'パソコンゲーム': 'PC gaming',
+        
+        # 状況の表現
+        'かわいい猫': 'cute cat',
+        '強い戦士': 'strong warrior',
+        '美しい花': 'beautiful flower',
+        '古い城': 'old castle',
+        '大きなドラゴン': 'big dragon',
+        
+        # ピクセルアート表現
+        'ドット絵風': 'pixel art style',
+        'レトロゲーム風': 'retro game style',
+        '8ビット風': '8-bit style',
     }
     
     # 日本語が含まれているかチェック
@@ -492,8 +562,12 @@ def translate_japanese_to_english(text):
     
     logger.info(f"Japanese prompt detected: {text}")
     
-    # 単語ベースで翻訳
+    # まず複合語・フレーズを処理（長いものから）
     translated = text
+    for jp_phrase, en_phrase in sorted(phrase_dict.items(), key=lambda x: len(x[0]), reverse=True):
+        translated = translated.replace(jp_phrase, en_phrase)
+    
+    # 次に単語ベースで翻訳
     for jp_word, en_word in translation_dict.items():
         translated = translated.replace(jp_word, en_word)
     
@@ -517,6 +591,14 @@ def enhance_pixel_art_prompt(prompt, model_id='runwayml/stable-diffusion-v1-5', 
     
     return enhanced_prompt
 
+# 新しいアニメーション関数をインポート
+try:
+    from creative_animations import create_creative_animation_frames
+    CREATIVE_ANIMATIONS_AVAILABLE = True
+except ImportError:
+    CREATIVE_ANIMATIONS_AVAILABLE = False
+    logger.warning("Creative animations module not found, using basic animations")
+
 def create_animation_frames(base_image, animation_type, frame_count, pixel_size, palette_size):
     """
     ベース画像からアニメーションフレームを生成
@@ -531,6 +613,17 @@ def create_animation_frames(base_image, animation_type, frame_count, pixel_size,
     Returns:
         list of PIL Images - アニメーションフレーム
     """
+    # 新しい創造的なアニメーションタイプをチェック
+    creative_types = [
+        "glitch_wave", "explode_reassemble", "pixel_rain", 
+        "wave_distortion", "heartbeat", "spiral", 
+        "split_merge", "electric_shock", "rubberband"
+    ]
+    
+    if animation_type in creative_types and CREATIVE_ANIMATIONS_AVAILABLE:
+        return create_creative_animation_frames(base_image, animation_type, frame_count, pixel_size, palette_size)
+    
+    # 既存のベーシックアニメーション
     frames = []
     
     if animation_type == "idle":
@@ -612,6 +705,11 @@ def create_animation_frames(base_image, animation_type, frame_count, pixel_size,
 def index():
     """メインページを提供"""
     return send_from_directory('../frontend', 'index.html')
+
+@app.route('/<path:filename>')
+def serve_static(filename):
+    """静的ファイルを提供"""
+    return send_from_directory('../frontend', filename)
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -1150,6 +1248,127 @@ def generate_sprite_sheet():
         
     except Exception as e:
         logger.error(f"Sprite sheet generation error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/generate_glitch_art', methods=['POST'])
+def generate_glitch_art():
+    """
+    グリッチアート風のピクセルアートを生成するエンドポイント
+    AIモデルを使用してプロンプトベースで生成
+    """
+    try:
+        data = request.json
+        
+        # パラメータ取得
+        prompt = data.get('prompt', '')
+        negative_prompt = data.get('negative_prompt', '')
+        width = data.get('width', 512)
+        height = data.get('height', 512)
+        pixel_size = data.get('pixel_size', 4)
+        steps = data.get('steps', 20)
+        guidance_scale = data.get('guidance_scale', 7.5)
+        seed = data.get('seed', None)
+        
+        # 日本語翻訳
+        prompt = translate_japanese_to_english(prompt)
+        negative_prompt = translate_japanese_to_english(negative_prompt)
+        
+        # グリッチアート用のプロンプト強化
+        glitch_keywords = [
+            "glitch art",
+            "digital glitch",
+            "neon colors",
+            "cyberpunk",
+            "corrupted data",
+            "pixel distortion",
+            "retro computer graphics",
+            "vaporwave aesthetic",
+            "digital artifacts",
+            "CRT monitor effect"
+        ]
+        
+        # プロンプトにグリッチアートキーワードを追加
+        enhanced_prompt = f"{prompt}, {', '.join(glitch_keywords)}, pixel art style"
+        enhanced_negative_prompt = f"{negative_prompt}, realistic, photograph, smooth, blurry"
+        
+        logger.info(f"Generating glitch art with prompt: {enhanced_prompt}")
+        
+        # 現在のモデルを使用（必要に応じて初期化）
+        if pipeline is None:
+            if not initialize_pipeline("runwayml/stable-diffusion-v1-5"):
+                return jsonify({'error': 'Pipeline initialization failed'}), 500
+        
+        # シード設定
+        if seed is not None:
+            if device == torch.device("mps"):
+                generator = torch.Generator().manual_seed(seed)
+            else:
+                generator = torch.Generator(device=device).manual_seed(seed)
+        else:
+            generator = None
+        
+        # 画像生成
+        with torch.no_grad():
+            result = pipeline(
+                prompt=enhanced_prompt,
+                negative_prompt=enhanced_negative_prompt,
+                num_inference_steps=steps,
+                guidance_scale=guidance_scale,
+                width=width,
+                height=height,
+                generator=generator
+            )
+        
+        image = result.images[0]
+        
+        # グリッチアート後処理を適用
+        from glitch_art_generator import GlitchArtGenerator
+        
+        # プロシージャルなグリッチ効果を追加
+        glitch_gen = GlitchArtGenerator(width, height)
+        glitch_gen.pixel_size = pixel_size
+        
+        # PILイメージをnumpy配列に変換してグリッチ効果を適用
+        import numpy as np
+        img_array = np.array(image)
+        
+        # 軽いグリッチ効果を追加（AIで生成した画像を活かす）
+        glitch_overlay = glitch_gen.generate(style='lines')
+        overlay_array = np.array(glitch_overlay)
+        
+        # ブレンド（グリッチ効果を30%適用）
+        blended = (img_array * 0.7 + overlay_array * 0.3).astype(np.uint8)
+        
+        # numpy配列をPILイメージに戻す
+        final_image = Image.fromarray(blended)
+        
+        # ピクセルアート処理
+        final_image = apply_pixel_art_processing(
+            final_image,
+            pixel_size=pixel_size,
+            palette_size=16  # グリッチアートは多めの色数
+        )
+        
+        # Base64エンコード
+        buffer = io.BytesIO()
+        final_image.save(buffer, format='PNG')
+        buffer.seek(0)
+        
+        image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        
+        return jsonify({
+            'success': True,
+            'image': f"data:image/png;base64,{image_base64}",
+            'type': 'static',
+            'style': 'ai_glitch',
+            'message': 'AIグリッチアート生成完了'
+        })
+            
+    except Exception as e:
+        logger.error(f"Glitch art generation error: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)
