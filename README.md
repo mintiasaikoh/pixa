@@ -2,6 +2,8 @@
 
 M2 Pro Mac向けに最適化されたStable Diffusionベースのピクセルアート生成アプリケーションです。
 
+> ⚠️ **重要**: このリポジトリには複数のバージョンが含まれています。詳細は[バージョンについて](#バージョンについて)を参照してください。
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Apple Silicon](https://img.shields.io/badge/Apple_Silicon-M1%2FM2-orange.svg)](https://support.apple.com/en-us/HT211814)
@@ -18,6 +20,7 @@ M2 Pro Mac向けに最適化されたStable Diffusionベースのピクセルア
 - **🌐 直感的なWeb UI**: モダンで使いやすいインターフェース
 - **🖥️ デスクトップアプリ**: pygame版でネイティブデスクトップ体験
 - **⚡ 高速生成**: 512×512px画像が約10-15秒
+- **✨ グリッチアート生成**: プロシージャルなグリッチアート・ジェネレーター（NEW!）
 - **🇯🇵 日本語プロンプト対応**: 自動翻訳で日本語入力をサポート
 - **🎯 複数のスタイルプリセット**: 8-bit、16-bit、ゲームボーイ風、ミニマル、高精細
 - **🎬 アニメーション生成**: 静止画から動くGIFアニメーションを作成
@@ -222,6 +225,30 @@ Pixaは日本語プロンプトを自動的に英語に翻訳してStable Diffus
 4. 滑らかさと速さを調整
 5. 「アニメーションを生成」ボタンをクリック
 
+### ✨ グリッチアート生成機能（NEW!）
+
+AIを使わずに、プロシージャルにグリッチアート風のピクセルアートを生成できます。
+
+**特徴:**
+- **高速生成**: AIモデル不要で瞬時に生成
+- **多様なスタイル**: 複数のグリッチ効果から選択可能
+- **ネオンカラー**: 黒背景に映える鮮やかな色彩
+- **アニメーション対応**: グリッチアニメーションも生成可能
+
+**スタイルオプション:**
+- **フル（全ての効果）**: すべてのグリッチ効果を組み合わせ
+- **歪んだ線**: 波打つような歪んだ線のパターン
+- **幾何学パターン**: 円や四角形の幾何学的構成
+- **アスキーアート風**: 文字を使った抽象的パターン
+- **ノイズパターン**: ランダムなピクセルノイズ
+
+**使用方法:**
+1. 「グリッチアートを生成」ボタンをクリック
+2. グリッチアート設定でスタイルを選択
+3. ピクセルサイズを調整（2-16）
+4. アニメーション生成のオン/オフ
+5. 生成ボタンで即座に作成
+
 ## 🔧 技術詳細
 
 ### システム要件
@@ -399,6 +426,14 @@ python -c "from model_configs import MODEL_CONFIGS; print(MODEL_CONFIGS.keys())"
 
 ## 🔄 更新履歴
 
+### 2025年5月25日（最新）
+- **グリッチアート生成機能を追加**
+  - プロシージャルなグリッチアート生成
+  - 5つの異なるスタイル（フル、歪んだ線、幾何学、アスキー、ノイズ）
+  - グリッチアニメーション生成対応
+  - ネオンカラーパレットによる鮮やかな表現
+  - AIモデル不要で高速生成
+
 ### 2025年5月24日（最新）
 - **パフォーマンス最適化を実装**
   - メモリ使用量を20-30%削減（600MB → 470MB）
@@ -425,5 +460,39 @@ python -c "from model_configs import MODEL_CONFIGS; print(MODEL_CONFIGS.keys())"
 - [Stability AI](https://stability.ai/) - Stable Diffusion
 - [Hugging Face](https://huggingface.co/) - Diffusers ライブラリ
 - [PublicPrompts](https://huggingface.co/PublicPrompts) - All-In-One-Pixel-Model
+
+## 📌 バージョンについて
+
+このリポジトリには複数のバージョンが混在しています：
+
+### 🎮 UI統合版（推奨・現在のメイン）
+最新のUI統合版で、すべての設定が左パネルに統合されています。
+- **起動方法**: `./start_server.sh`
+- **主要ファイル**:
+  - `frontend/index.html` - 統合UI
+  - `frontend/unified-ui.css` / `unified-settings.js` - 統合UI用スタイル
+  - `frontend/modern-app.js` - アプリケーションロジック
+  - `backend/server.py` - メインサーバー
+- **特徴**:
+  - レトロゲーム風テンプレート（ファミコン、スーファミ、ゲームボーイ、アーケード）
+  - アコーディオン式設定パネル
+  - 品質プリセット機能
+  - 日本語プロンプト処理
+
+### 📦 改善版（別実装）
+別のアプローチで実装されたバージョンです。
+- **主要ファイル**:
+  - `frontend/index-improved-v2.html`
+  - `frontend/app-improved.js` / `style-improved.css`
+  - `backend/server_optimized_v2.py`
+- **特徴**: パフォーマンス最適化に特化
+
+### 🖥️ デスクトップアプリ版
+macOS用のアプリケーションラッパーです。
+- `create_app.sh` - Web版用Appラッパー
+- `create_app_desktop.sh` - Pygame版用Appラッパー
+- `create_smart_app.sh` - 自動検出版
+
+詳細は各ドキュメント（`APP_GUIDE.md`、`IMPROVEMENTS.md`）を参照してください。
 - [Onodofthenorth](https://huggingface.co/Onodofthenorth) - SD_PixelArt_SpriteSheet_Generator
 - [Apple](https://developer.apple.com/) - Metal Performance Shaders
